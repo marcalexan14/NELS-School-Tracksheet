@@ -29,6 +29,7 @@ export function YearSwitcher({ years, label }: { years: Year[]; label: string })
       <select
         value={current}
         onChange={onChange}
+        dir="ltr"
         className="bg-transparent pe-1 text-xs font-medium outline-none"
       >
         {years.map((y) => (
