@@ -1,0 +1,210 @@
+# NELS Tracking Sheet — how to use it
+
+A walkthrough of one full academic year, in the order you'd actually do things.
+Every screen has an **academic-year picker in the top bar** — it controls which
+year everything you see and enter belongs to.
+
+---
+
+## Roles — who can do what
+
+| Role | Students & guardians | Enrolments | Fees & plans | Payments | Settings & staff |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Owner** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Admin** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Registrar** | ✅ | ✅ | — | — | — |
+| **Accountant** | — | — | ✅ | ✅ | — |
+| **Teacher** | read | read | read | read | read |
+| **Viewer** | read | read | read | read | read |
+
+Everyone can open every screen; the table above is about *changing* things.
+
+---
+
+## 1. First-time setup
+
+1. Open the app. You're sent to **`/setup`**.
+2. Enter the **school name**, a short code (e.g. `NELS`), the year the first
+   academic year starts (e.g. `2025`), and your own name, email, and password.
+3. Submit. This creates:
+   - the school,
+   - **you** as the Owner,
+   - the Egyptian grade ladder — KG1, KG2, Primary 1–6, Preparatory 1–3,
+     Secondary 1–3,
+   - the academic year **2025 / 2026** with **Term 1** and **Term 2**,
+   - default fee items: Tuition, Registration, Bus, Books, Uniform, Activities,
+     Exams.
+4. You're logged in on the Dashboard (empty for now).
+
+### Add the rest of your staff
+
+**Settings → Staff → add a person**: name, email, a temporary password, and a
+role. Give the finance office **Accountant**, the front office **Registrar**.
+They sign in at `/login` and can change their password later.
+
+### Switch to Arabic (optional)
+
+**Settings → School profile → Language → العربية → Save changes.** The whole
+interface, including layout direction, switches to Arabic. Student and guardian
+names are always shown in Arabic regardless.
+
+---
+
+## 2. Set the fee plans (before you bill anyone)
+
+**Fees & plans.**
+
+1. **Fee items** — the defaults cover most schools. Add more if you need to
+   (e.g. "Lab fee", "Graduation") with an Arabic name and a category.
+2. **Fee plans** — click a grade chip (e.g. *Primary 1*). Fill in the amount for
+   each fee item that applies to that grade this year:
+   - **Instalments** (top) — how many parts tuition is split into (commonly 3 or
+     4).
+   - **Mandatory** — ticked lines are billed to every student. Untick *Bus* if
+     only some families use it.
+   - **Instalments** column — ticked lines are split across the instalment
+     schedule; leave it on for Tuition, off for one-off fees like Registration.
+   - Click **Save changes**. A ✓ appears on the grade chip.
+3. Repeat for every grade. Grades with the same fees: fill one, then copy the
+   numbers across — it's quick.
+
+---
+
+## 3. Register students (Admissions)
+
+**Admissions.** One form does everything:
+
+- **Student** — the four-part Arabic name (first / father's / grandfather's /
+  family), the name in English for certificates, national ID (14 digits, or
+  leave blank for young KG pupils), gender, date of birth, religion, birth
+  governorate, address.
+- **Guardian** — name, relation, phone. This person is set as primary and
+  emergency contact; add more guardians later from the student's profile.
+- **Enrolment (optional)** — tick *Enrol into 2025 / 2026 now* and pick a grade
+  to place them straight away. Otherwise they're saved as an **Applicant** and
+  you enrol them later.
+
+Save. You land on the student's profile with a generated code like
+`NELS-2025-0042`.
+
+### The student profile
+
+Five tabs:
+
+- **Overview** — personal data and any discounts.
+- **Guardians** — all contacts; add more with *Add guardian* (tick *Primary
+  contact* to move the primary flag).
+- **Enrolment history** — one row per year.
+- **Fees & payments** — the student's ledger once bills exist: gross, discount,
+  net, paid, remaining, and status per fee item.
+- **Documents** — uploaded files.
+
+---
+
+## 4. Enrol students into grades and classes
+
+**Enrolments.**
+
+1. The row of tiles shows how many active students are in each grade this year.
+2. **Classes** — create sections: pick a grade, name it `1-A`, `1-B`, set a
+   capacity, Save.
+3. **Enrol student** — pick a student not yet enrolled this year, a grade, and
+   (optionally) a class. Applicants become Enrolled automatically.
+4. The table at the bottom lists everyone enrolled this year with their class.
+
+---
+
+## 5. Generate the bills
+
+**Fees & plans → Generate bills.**
+
+This looks at every actively-enrolled student, finds the fee plan for their
+grade, and creates their charges — splitting tuition into the instalments you
+configured, applying any discounts. It's **safe to run again**: it only fills in
+students who don't have bills yet (new admissions mid-year, for example).
+
+Discounts must be added *before* generating a student's bills — see below.
+
+### Discounts
+
+Add a discount from the student's **Overview** tab (Accountant / Admin / Owner):
+type (sibling, staff child, merit, hardship, early payment), a **percentage or a
+fixed amount**, and optionally restrict it to one category (usually *Tuition*).
+The discount is applied automatically the next time bills are generated for that
+student.
+
+---
+
+## 6. Take payments
+
+**Payments → New payment** (or the **Record payment** button on a student's
+profile).
+
+1. Pick the student. Students with an outstanding balance are grouped at the top
+   with the amount owing.
+2. Their open fees are listed. Enter the **amount**, the **method** (Cash,
+   InstaPay, Bank transfer, Cheque, Card), and the **date**.
+3. Optionally target a specific fee — otherwise the payment fills the
+   **oldest-due instalments first**.
+4. Submit. A receipt number like `RC-2025-000418` is generated and you land on
+   the **printable receipt** (use *Print receipt*, or your browser's print — the
+   app chrome is hidden on paper).
+
+The student's ledger, their balance in the register, and the dashboard all
+update immediately.
+
+**Payments** lists every receipt for the year with what each one was allocated
+to. Click a receipt number to reprint it.
+
+---
+
+## 7. Watch the numbers
+
+**Dashboard** (scoped to the year in the top bar):
+
+- **Fees billed / Collected / Collection rate / Outstanding**, plus overdue
+  instalment count.
+- **Collections by month** — the cash curve across the school year.
+- **Billed by stage** — collected vs billed for KG, Primary, Preparatory,
+  Secondary.
+- **Recent payments** and **Outstanding by grade**.
+
+**Reports** adds:
+
+- Income by **stage**, by **fee type**, and a full **income-by-grade table**
+  (billed / collected / outstanding / collection rate per grade, with a total
+  row).
+- **Collections by payment method** with percentages — useful for reconciling
+  the bank.
+
+To look at a previous year, change the picker in the top bar.
+
+---
+
+## 8. End of year — promote the cohort
+
+Before the new year starts:
+
+1. **Settings → Academic years → add** the next year (e.g. starts `2026`), tick
+   *Make current*.
+2. **Enrolments → Promote cohort** → from `2025 / 2026` to `2026 / 2027`.
+   Every active student moves up one grade into the new year. Students finishing
+   **Secondary 3** are marked **Graduated**.
+3. Set the **fee plans** for the new year (step 2), then **generate bills**
+   (step 5).
+
+New siblings and transfers: register them in Admissions and enrol them normally.
+
+---
+
+## Tips
+
+- **The year picker is everything.** If a screen looks empty, check you're on
+  the right academic year.
+- **Re-running "Generate bills" is safe** and is how you bill students admitted
+  after the initial run.
+- **A payment with no matching open fee** is recorded as an unallocated credit
+  on the student's account and shown in yellow on the receipt; it's applied
+  automatically once a bill exists.
+- **Balances shown in red** in the student register mean money is owed for the
+  selected year.
