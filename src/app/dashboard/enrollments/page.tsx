@@ -1,6 +1,6 @@
 import { requireStaff, can } from "@/lib/session";
 import { resolveYear, listYears } from "@/lib/academic";
-import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
+import { getTranslator, type Locale } from "@/lib/i18n";
 import { fullName } from "@/lib/students";
 import { db } from "@/db";
 import { classrooms, enrollments, gradeLevels, students } from "@/db/schema";

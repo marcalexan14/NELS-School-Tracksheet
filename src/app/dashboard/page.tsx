@@ -10,7 +10,6 @@ import { db } from "@/db";
 import { payments } from "@/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { CollectionsChart } from "@/components/dashboard/collections-chart";
 import { BarList } from "@/components/dashboard/bar-list";

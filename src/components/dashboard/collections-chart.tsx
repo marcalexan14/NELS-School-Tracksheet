@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import {
   Area,
@@ -47,10 +47,15 @@ function TooltipBox({
   );
 }
 
+const subscribe = () => () => {};
+
 export function CollectionsChart({ data, emptyLabel }: { data: Point[]; emptyLabel: string }) {
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
 
   if (data.length === 0) {
     return (

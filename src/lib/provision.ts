@@ -1,12 +1,5 @@
 import { db } from "@/db";
-import {
-  schools,
-  stages,
-  gradeLevels,
-  academicYears,
-  terms,
-  feeItems,
-} from "@/db/schema";
+import { stages, gradeLevels, academicYears, terms, feeItems } from "@/db/schema";
 
 // The Egyptian national ladder (نظام التعليم المصري), KG1 through Thanaweya Amma.
 // `ordinal` is the global position 1..14 used for cohort promotion.

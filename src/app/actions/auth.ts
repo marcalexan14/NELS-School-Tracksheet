@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users, schools, staff } from "@/db/schema";
 import { signIn } from "@/auth";

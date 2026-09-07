@@ -6,7 +6,7 @@ import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
 import { formatEgpExact } from "@/lib/money";
 import { db } from "@/db";
 import { feeItems, feePlans, gradeLevels, studentFees } from "@/db/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { addFeeItemAction, saveFeePlanAction, generateBillsAction } from "@/app/actions/fees";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
