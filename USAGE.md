@@ -175,8 +175,9 @@ student.
 **Payments → New payment** (or the **Record payment** button on a student's
 profile).
 
-1. Pick the student. Students with an outstanding balance are grouped at the top
-   with the amount owing.
+1. **Find the student.** The picker searches as you type — name, code, national
+   ID, or **guardian phone**. Filter by grade and class, and by default it only
+   shows students who owe something, sorted by how much. Click the row.
 2. Their open fees are listed. Enter the **amount**, the **method** (Cash,
    InstaPay, Bank transfer, Cheque, Card), and the **date**.
 3. Optionally target a specific fee — otherwise the payment fills the
