@@ -8,6 +8,7 @@ import { getStudentLedger } from "@/lib/fees";
 import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
 import { formatEgpExact } from "@/lib/money";
 import { addGuardianAction } from "@/app/actions/students";
+import { StudentFeesTable } from "@/components/students/student-fees-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,14 +25,6 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
     </div>
   );
 }
-
-const FEE_STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  PAID: "default",
-  PARTIAL: "secondary",
-  PENDING: "outline",
-  OVERDUE: "destructive",
-  WAIVED: "outline",
-};
 
 export default async function StudentProfilePage({
   params,
@@ -248,39 +241,41 @@ export default async function StudentProfilePage({
               </div>
               <Card>
                 <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("fee_item")}</TableHead>
-                        <TableHead className="text-right">{t("gross")}</TableHead>
-                        <TableHead className="text-right">{t("discount")}</TableHead>
-                        <TableHead className="text-right">{t("net")}</TableHead>
-                        <TableHead className="text-right">{t("paid")}</TableHead>
-                        <TableHead className="text-right">{t("remaining")}</TableHead>
-                        <TableHead>{t("status")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {ledger.lines.map((l) => (
-                        <TableRow key={l.id}>
-                          <TableCell className="font-medium">
-                            {locale === "ar" ? l.feeItem.nameAr ?? l.feeItem.name : l.feeItem.name}
-                            {l.installments.length > 1 && (
-                              <div className="mt-0.5 text-xs text-muted-foreground">
-                                {l.installments.length} {t("installments").toLowerCase()}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-muted-foreground">{formatEgpExact(l.gross)}</TableCell>
-                          <TableCell className="text-right tabular-nums text-muted-foreground">{Number(l.discount) > 0 ? `-${formatEgpExact(l.discount)}` : "—"}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatEgpExact(l.net)}</TableCell>
-                          <TableCell className="text-right tabular-nums text-primary">{formatEgpExact(l.paid)}</TableCell>
-                          <TableCell className="text-right tabular-nums">{formatEgpExact(l.remaining)}</TableCell>
-                          <TableCell><Badge variant={FEE_STATUS_VARIANT[l.status] ?? "secondary"}>{enumLabel(locale, l.status)}</Badge></TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <StudentFeesTable
+                    canAdjust={can(ctx.role, "fees")}
+                    lines={ledger.lines.map((l) => ({
+                      id: l.id,
+                      feeItemName: locale === "ar" ? l.feeItem.nameAr ?? l.feeItem.name : l.feeItem.name,
+                      gross: l.gross,
+                      discount: l.discount,
+                      net: l.net,
+                      paid: l.paid,
+                      remaining: l.remaining,
+                      status: l.status,
+                      statusLabel: enumLabel(locale, l.status),
+                      installmentCount: l.installments.length,
+                    }))}
+                    labels={{
+                      fee: t("fee_item"),
+                      gross: t("gross"),
+                      discount: t("discount"),
+                      net: t("net"),
+                      paid: t("paid"),
+                      remaining: t("remaining"),
+                      status: t("status"),
+                      installments: t("installments").toLowerCase(),
+                      adjust: t("adjust_fee"),
+                      how: t("adjust_how"),
+                      exactAmount: t("adjust_exact"),
+                      percentOff: t("adjust_percent"),
+                      amountOff: t("adjust_amount_off"),
+                      reason: t("adjust_reason"),
+                      reasonHint: t("adjust_reason_hint"),
+                      adjustHint: t("adjust_hint"),
+                      save: t("save"),
+                      cancel: t("cancel"),
+                    }}
+                  />
                 </CardContent>
               </Card>
             </>
