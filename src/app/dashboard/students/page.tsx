@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search, UserPlus, FileSpreadsheet } from "lucide-react";
+import { UserPlus, FileSpreadsheet } from "lucide-react";
 import { requireStaff, can } from "@/lib/session";
 import { resolveYear } from "@/lib/academic";
 import { listStudents } from "@/lib/students";
@@ -8,6 +8,7 @@ import { formatEgpExact } from "@/lib/money";
 import { db } from "@/db";
 import { gradeLevels } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { StudentFilters } from "@/components/students/student-filters";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -68,33 +69,16 @@ export default async function StudentsPage({
 
       <Card>
         <CardContent className="p-4">
-          <form method="get" className="flex flex-wrap items-end gap-3">
-            {sp.year && <input type="hidden" name="year" value={sp.year} />}
-            <div className="relative min-w-[220px] flex-1">
-              <Search className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                name="q"
-                defaultValue={sp.q ?? ""}
-                placeholder={t("search_students")}
-                className="h-9 w-full rounded-md border border-border bg-background ps-8 pe-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-            </div>
-            <select name="grade" defaultValue={sp.grade ?? ""} className="h-9 rounded-md border border-border bg-background px-2 text-sm">
-              <option value="">{t("all_grades")}</option>
-              {grades.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {locale === "ar" ? g.nameAr : g.name}
-                </option>
-              ))}
-            </select>
-            <select name="status" defaultValue={sp.status ?? ""} className="h-9 rounded-md border border-border bg-background px-2 text-sm">
-              <option value="">{t("all_statuses")}</option>
-              {["ENROLLED", "APPLICANT", "GRADUATED", "WITHDRAWN", "TRANSFERRED"].map((s) => (
-                <option key={s} value={s}>{enumLabel(locale, s)}</option>
-              ))}
-            </select>
-            <Button type="submit" variant="outline">{t("search_students").split(" ")[0]}</Button>
-          </form>
+          <StudentFilters
+            grades={grades.map((g) => ({ id: g.id, label: locale === "ar" ? g.nameAr : g.name }))}
+            statuses={["ENROLLED", "APPLICANT", "GRADUATED", "WITHDRAWN", "TRANSFERRED"].map((s) => ({
+              value: s,
+              label: enumLabel(locale, s),
+            }))}
+            placeholder={t("search_students")}
+            allGradesLabel={t("all_grades")}
+            allStatusesLabel={t("all_statuses")}
+          />
         </CardContent>
       </Card>
 
