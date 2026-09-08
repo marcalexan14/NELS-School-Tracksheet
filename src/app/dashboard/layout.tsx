@@ -36,7 +36,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             {ctx.school.shortName || ctx.school.name}
           </span>
         </div>
-        <SidebarNav locale={locale} />
+        <SidebarNav locale={locale} canExport={["OWNER", "ADMIN", "ACCOUNTANT"].includes(ctx.role)} />
         <div className="border-t border-border p-3 text-xs text-muted-foreground">
           {t("signed_in_as")}{" "}
           <span className="font-medium text-foreground">{session.user.email}</span>
