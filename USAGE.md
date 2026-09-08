@@ -24,14 +24,15 @@ Everyone can open every screen; the table above is about *changing* things.
 ## 1. First-time setup
 
 1. Open the app. You're sent to **`/setup`**.
-2. Enter the **school name**, a short code (e.g. `NELS`), the year the first
-   academic year starts (e.g. `2025`), and your own name, email, and password.
+2. Enter the **school name**, a short code (e.g. `NELS`), and your own name,
+   email, and password. Pick the **academic year** from the dropdown and adjust
+   its **start / end dates** if your calendar isn't September–June.
 3. Submit. This creates:
    - the school,
    - **you** as the Owner,
    - the Egyptian grade ladder — KG1, KG2, Primary 1–6, Preparatory 1–3,
      Secondary 1–3,
-   - the academic year **2025 / 2026** with **Term 1** and **Term 2**,
+   - the academic year you chose, split into **Term 1** and **Term 2**,
    - default fee items: Tuition, Registration, Bus, Books, Uniform, Activities,
      Exams.
 4. You're logged in on the Dashboard (empty for now).
@@ -160,13 +161,23 @@ students who don't have bills yet (new admissions mid-year, for example).
 
 Discounts must be added *before* generating a student's bills — see below.
 
-### Discounts
+### Discounts and special cases
 
-Add a discount from the student's **Overview** tab (Accountant / Admin / Owner):
-type (sibling, staff child, merit, hardship, early payment), a **percentage or a
-fixed amount**, and optionally restrict it to one category (usually *Tuition*).
-The discount is applied automatically the next time bills are generated for that
-student.
+**Year-wide discounts** (applied when bills are generated): a percentage or fixed
+amount off a fee category (usually *Tuition*), for sibling / staff-child /
+hardship cases.
+
+**Adjusting one charge after billing** — on the student's **Fees & payments**
+tab, click **Adjust** on any fee row (Accountant / Admin / Owner). Choose:
+
+- **Set exact amount** — this student's tuition is EGP 20,000 instead of 32,000,
+- **Discount %** — 25% off this charge,
+- **Discount EGP** — 5,000 off this charge,
+
+with a **reason** (kept on the record). The unpaid instalments are recalculated
+so the remaining balance matches the new figure; instalments already paid are
+left alone. You can't set an amount below what the family has already paid toward
+that fee. A charge reduced to zero is marked *Waived*.
 
 ---
 
@@ -221,8 +232,9 @@ To look at a previous year, change the picker in the top bar.
 
 Before the new year starts:
 
-1. **Settings → Academic years → add** the next year (e.g. starts `2026`), tick
-   *Make current*.
+1. **Settings → Academic years → add** the next year: its name, start/end dates,
+   and how many terms; tick *Make current*. Existing years' names, dates, and
+   term dates are editable there too.
 2. **Enrolments → Promote cohort** → from `2025 / 2026` to `2026 / 2027`.
    Every active student moves up one grade into the new year. Students finishing
    **Secondary 3** are marked **Graduated**.
