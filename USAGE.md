@@ -130,11 +130,22 @@ Five tabs:
    capacity, Save.
 3. **Enrol student** — pick a student not yet enrolled this year, a grade, and
    (optionally) a class. Applicants become Enrolled automatically.
-4. The table at the bottom lists everyone enrolled this year with their class.
-   Click **Edit** on any row to move that student to a different grade or class,
-   or set the enrolment to *Withdrawn* (which also marks the student withdrawn).
-   The same **Edit** link appears on each row of a student's *Enrolment history*
-   tab. Changing the grade drops a class that no longer fits.
+
+### The roster (editing placements)
+
+The roster under the year name is the working view:
+
+- **Filter** by grade, by class (or *Unassigned*), or type a name / code in the
+  search box.
+- **Edit one student** — click **Edit** on the row. The grade, class, and status
+  become dropdowns; the class list narrows to whatever grade you pick. Hit the
+  check to save — no page reload. Setting the status to *Withdrawn* also marks
+  the student withdrawn.
+- **Move a batch** — tick the checkboxes on several rows, pick a class in the
+  *Move to…* bar that appears, and click **Move**. Good for sorting a new
+  intake into sections.
+- From a student's profile, the **Edit** link on their *Enrolment history* tab
+  drops you into the roster already filtered to that student.
 
 ---
 
