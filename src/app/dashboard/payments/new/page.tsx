@@ -6,9 +6,10 @@ import { listStudents, fullName } from "@/lib/students";
 import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
 import { formatEgpExact } from "@/lib/money";
 import { db } from "@/db";
-import { students } from "@/db/schema";
+import { gradeLevels, students } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { recordPaymentAction } from "@/app/actions/payments";
+import { PaymentStudentPicker } from "@/components/payments/student-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,9 +44,16 @@ export default async function NewPaymentPage({
   const ledger = selected ? await getStudentLedger(selected.id, active.id) : null;
   const openLines = ledger?.lines.filter((l) => Number(l.remaining) > 0) ?? [];
 
-  // Candidate list for the picker (students with an outstanding balance first).
-  const roster = await listStudents(ctx.schoolId, active.id, {});
-  const withBalance = roster.filter((r) => Number(r.balance) > 0);
+  // Candidate list for the picker — client-side filtered.
+  const roster = selected ? [] : await listStudents(ctx.schoolId, active.id, {});
+  const orderedGrades = selected
+    ? []
+    : (
+        await db.query.gradeLevels.findMany({
+          where: eq(gradeLevels.schoolId, ctx.schoolId),
+          orderBy: (g, { asc }) => asc(g.ordinal),
+        })
+      ).map((g) => ({ en: g.name, label: locale === "ar" ? g.nameAr : g.name }));
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -60,26 +68,21 @@ export default async function NewPaymentPage({
         <Card>
           <CardHeader><CardTitle className="text-base">{t("student")}</CardTitle></CardHeader>
           <CardContent>
-            <form method="get" className="flex flex-wrap items-end gap-3">
-              {sp.year && <input type="hidden" name="year" value={sp.year} />}
-              <div className="min-w-[280px] flex-1 space-y-2">
-                <Label htmlFor="student">{t("student")}</Label>
-                <select id="student" name="student" required defaultValue="" className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm">
-                  <option value="" disabled>—</option>
-                  <optgroup label={t("outstanding_label")}>
-                    {withBalance.map((r) => (
-                      <option key={r.id} value={r.id}>{r.code} · {r.name} — {formatEgpExact(r.balance)}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label={t("all_statuses")}>
-                    {roster.filter((r) => Number(r.balance) <= 0).map((r) => (
-                      <option key={r.id} value={r.id}>{r.code} · {r.name}</option>
-                    ))}
-                  </optgroup>
-                </select>
-              </div>
-              <Button type="submit">{t("back")} →</Button>
-            </form>
+            <PaymentStudentPicker
+              rows={roster}
+              orderedGrades={orderedGrades}
+              locale={locale}
+              labels={{
+                search: t("search_students"),
+                allGrades: t("all_grades"),
+                allClasses: t("all_classes"),
+                onlyOwing: t("picker_only_owing"),
+                matches: t("picker_matches"),
+                paidUp: t("picker_paid_up"),
+                none: t("no_students"),
+                hint: t("picker_hint"),
+              }}
+            />
           </CardContent>
         </Card>
       ) : (

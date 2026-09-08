@@ -70,6 +70,10 @@ const en: Dict = {
   move_to_class: "Move to",
   move: "Move",
   selected_count: "selected",
+  picker_matches: "matches",
+  picker_only_owing: "Only with a balance",
+  picker_paid_up: "paid up",
+  picker_hint: "Students who owe most are listed first. Search by name, code, national ID, or guardian phone.",
 
   // student profile
   tab_overview: "Overview",
@@ -228,6 +232,10 @@ const ar: Dict = {
   move_to_class: "نقل إلى",
   move: "نقل",
   selected_count: "محدد",
+  picker_matches: "نتيجة",
+  picker_only_owing: "المستحق عليهم فقط",
+  picker_paid_up: "سُدِّد بالكامل",
+  picker_hint: "الأكثر مديونية في الأعلى. ابحث بالاسم أو الكود أو الرقم القومي أو هاتف ولي الأمر.",
 
   tab_overview: "بيانات عامة",
   tab_guardians: "أولياء الأمور",
