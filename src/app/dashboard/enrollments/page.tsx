@@ -1,28 +1,25 @@
-import Link from "next/link";
 import { requireStaff, can } from "@/lib/session";
 import { resolveYear, listYears } from "@/lib/academic";
-import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
+import { getTranslator, type Locale } from "@/lib/i18n";
 import { fullName } from "@/lib/students";
 import { db } from "@/db";
 import { classrooms, enrollments, gradeLevels, students } from "@/db/schema";
-import { and, eq, notInArray, or, sql } from "drizzle-orm";
+import { and, eq, notInArray, sql } from "drizzle-orm";
 import {
   enrollStudentAction,
   createClassroomAction,
   promoteCohortAction,
-  updateEnrollmentAction,
 } from "@/app/actions/enrollments";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { RosterEditor, type RosterRow } from "@/components/enrollments/roster-editor";
 
 export default async function EnrollmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; edit?: string }>;
+  searchParams: Promise<{ year?: string; focus?: string }>;
 }) {
   const ctx = await requireStaff();
   const locale = (ctx.school.locale as Locale) ?? "en";
@@ -41,23 +38,19 @@ export default async function EnrollmentsPage({
     ? await db.query.classrooms.findMany({
         where: eq(classrooms.academicYearId, active.id),
         with: { gradeLevel: true },
+        orderBy: (c, { asc }) => asc(c.name),
       })
     : [];
 
-  // Per-grade enrolled counts for the active year.
   const counts = active
     ? await db
-        .select({
-          gradeLevelId: enrollments.gradeLevelId,
-          n: sql<number>`count(*)`,
-        })
+        .select({ gradeLevelId: enrollments.gradeLevelId, n: sql<number>`count(*)` })
         .from(enrollments)
         .where(and(eq(enrollments.academicYearId, active.id), eq(enrollments.status, "ACTIVE")))
         .groupBy(enrollments.gradeLevelId)
     : [];
   const countByGrade = new Map(counts.map((c) => [c.gradeLevelId, Number(c.n)]));
 
-  // Students not yet enrolled in the active year (candidates for enrolment).
   const enrolledIds = active
     ? (
         await db
@@ -74,9 +67,50 @@ export default async function EnrollmentsPage({
           enrolledIds.length ? notInArray(students.id, enrolledIds) : undefined,
         ),
         orderBy: (s, { asc }) => [asc(s.familyName), asc(s.firstName)],
-        limit: 200,
+        limit: 300,
       })
     : [];
+
+  // The full roster for the active year (including withdrawn, so they can be
+  // reinstated) — fed to the client-side editor.
+  const rosterRaw = active
+    ? await db.query.enrollments.findMany({
+        where: eq(enrollments.academicYearId, active.id),
+        with: { student: true },
+        limit: 2000,
+      })
+    : [];
+  const roster: RosterRow[] = rosterRaw
+    .map((e) => ({
+      id: e.id,
+      code: e.student.code,
+      name: fullName(e.student),
+      gradeLevelId: e.gradeLevelId,
+      classroomId: e.classroomId,
+      status: e.status as RosterRow["status"],
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "ar"));
+
+  const rosterLabels = {
+    search: t("search_students"),
+    allGrades: t("all_grades"),
+    allClasses: t("all_classes"),
+    unassigned: t("unassigned"),
+    selected: t("selected_count"),
+    moveTo: t("move_to_class"),
+    move: t("move"),
+    clear: t("cancel"),
+    code: t("student_code"),
+    name: t("student_name"),
+    grade: t("grade"),
+    classroom: t("classroom"),
+    status: t("status"),
+    actions: t("actions"),
+    none: t("no_students"),
+    edit: t("edit"),
+    save: t("save"),
+    cancel: t("cancel"),
+  };
 
   return (
     <div className="space-y-6">
@@ -95,6 +129,25 @@ export default async function EnrollmentsPage({
           </div>
         ))}
       </div>
+
+      {active && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{active.name}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <RosterEditor
+              rows={roster}
+              grades={grades.map((g) => ({ id: g.id, name: g.name, nameAr: g.nameAr, ordinal: g.ordinal }))}
+              classrooms={yearClassrooms.map((c) => ({ id: c.id, name: c.name, gradeLevelId: c.gradeLevelId }))}
+              editable={editable}
+              locale={locale}
+              labels={rosterLabels}
+              initialSearch={sp.focus ?? ""}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {editable && active && (
         <Card>
@@ -194,131 +247,6 @@ export default async function EnrollmentsPage({
           </Card>
         )}
       </div>
-
-      {active && (
-        <Card>
-          <CardHeader><CardTitle className="text-base">{active.name}</CardTitle></CardHeader>
-          <CardContent className="p-0">
-            <EnrolledTable
-              yearId={active.id}
-              yearParam={sp.year}
-              editId={sp.edit}
-              editable={editable}
-              grades={grades}
-              classrooms={yearClassrooms}
-              locale={locale}
-              t={t}
-            />
-          </CardContent>
-        </Card>
-      )}
     </div>
-  );
-}
-
-type GradeRow = { id: string; name: string; nameAr: string };
-type ClassRow = { id: string; name: string; gradeLevelId: string };
-
-async function EnrolledTable({
-  yearId,
-  yearParam,
-  editId,
-  editable,
-  grades,
-  classrooms: classList,
-  locale,
-  t,
-}: {
-  yearId: string;
-  yearParam?: string;
-  editId?: string;
-  editable: boolean;
-  grades: GradeRow[];
-  classrooms: ClassRow[];
-  locale: Locale;
-  t: ReturnType<typeof getTranslator>;
-}) {
-  const rows = await db.query.enrollments.findMany({
-    where: and(
-      eq(enrollments.academicYearId, yearId),
-      editId
-        ? or(eq(enrollments.status, "ACTIVE"), eq(enrollments.id, editId))
-        : eq(enrollments.status, "ACTIVE"),
-    ),
-    with: { student: true, gradeLevel: true, classroom: true },
-    orderBy: (e, { asc }) => asc(e.gradeLevelId),
-    limit: 500,
-  });
-
-  const q = yearParam ? `year=${yearParam}&` : "";
-
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>{t("student_code")}</TableHead>
-          <TableHead>{t("student_name")}</TableHead>
-          <TableHead>{t("grade")}</TableHead>
-          <TableHead>{t("classroom")}</TableHead>
-          {editable && <TableHead className="w-40 text-right">{t("actions")}</TableHead>}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.length === 0 && (
-          <TableRow><TableCell colSpan={editable ? 5 : 4} className="py-8 text-center text-sm text-muted-foreground">—</TableCell></TableRow>
-        )}
-        {rows.map((e) =>
-          editable && editId === e.id ? (
-            <TableRow key={e.id} className="bg-muted/40 align-top">
-              <TableCell className="font-mono text-xs text-muted-foreground">{e.student.code}</TableCell>
-              <TableCell className="font-ar">{fullName(e.student)}</TableCell>
-              <TableCell colSpan={2}>
-                <form action={updateEnrollmentAction} className="flex flex-wrap items-center gap-2">
-                  <input type="hidden" name="enrollmentId" value={e.id} />
-                  {yearParam && <input type="hidden" name="year" value={yearParam} />}
-                  <select name="gradeLevelId" defaultValue={e.gradeLevelId} className="h-8 rounded-md border border-border bg-background px-2 text-sm">
-                    {grades.map((g) => (
-                      <option key={g.id} value={g.id}>{locale === "ar" ? g.nameAr : g.name}</option>
-                    ))}
-                  </select>
-                  <select name="classroomId" defaultValue={e.classroomId ?? ""} className="h-8 rounded-md border border-border bg-background px-2 text-sm">
-                    <option value="">{t("unassigned")}</option>
-                    {classList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {(grades.find((g) => g.id === c.gradeLevelId)?.[locale === "ar" ? "nameAr" : "name"]) ?? ""} · {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select name="status" defaultValue="ACTIVE" className="h-8 rounded-md border border-border bg-background px-2 text-sm">
-                    <option value="ACTIVE">{enumLabel(locale, "ACTIVE")}</option>
-                    <option value="COMPLETED">{enumLabel(locale, "COMPLETED")}</option>
-                    <option value="WITHDRAWN">{enumLabel(locale, "WITHDRAWN")}</option>
-                  </select>
-                  <Button type="submit" size="sm">{t("save")}</Button>
-                  <Link href={`/dashboard/enrollments?${q.replace(/&$/, "")}`} className="text-xs text-muted-foreground hover:text-foreground">
-                    {t("cancel")}
-                  </Link>
-                </form>
-              </TableCell>
-              <TableCell></TableCell>
-            </TableRow>
-          ) : (
-            <TableRow key={e.id}>
-              <TableCell className="font-mono text-xs text-muted-foreground">{e.student.code}</TableCell>
-              <TableCell className="font-ar">{fullName(e.student)}</TableCell>
-              <TableCell>{locale === "ar" ? e.gradeLevel.nameAr : e.gradeLevel.name}</TableCell>
-              <TableCell className="text-muted-foreground">{e.classroom?.name ?? <Badge variant="outline">{t("unassigned")}</Badge>}</TableCell>
-              {editable && (
-                <TableCell className="text-right">
-                  <Link href={`/dashboard/enrollments?${q}edit=${e.id}`} className="text-xs font-medium text-primary hover:underline">
-                    {t("edit")}
-                  </Link>
-                </TableCell>
-              )}
-            </TableRow>
-          ),
-        )}
-      </TableBody>
-    </Table>
   );
 }

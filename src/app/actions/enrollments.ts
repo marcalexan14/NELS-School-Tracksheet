@@ -13,37 +13,41 @@ import {
 } from "@/db/schema";
 import { requireCan } from "@/lib/session";
 
-// Edit an existing placement: move the student to a different grade / class, or
-// change the enrolment status (active / completed / withdrawn).
-export async function updateEnrollmentAction(formData: FormData) {
+type EnrollmentEdit = {
+  enrollmentId: string;
+  gradeLevelId?: string;
+  classroomId?: string | null;
+  status?: "ACTIVE" | "COMPLETED" | "WITHDRAWN";
+};
+
+// Edit one placement in place — move the student to a different grade / class,
+// or change the enrolment status. Called directly from the roster editor.
+export async function updateEnrollment(edit: EnrollmentEdit): Promise<{ ok: boolean; error?: string }> {
   const ctx = await requireCan("enrollments");
-  const enrollmentId = String(formData.get("enrollmentId") ?? "");
-  const gradeLevelId = String(formData.get("gradeLevelId") ?? "");
-  const classroomId = String(formData.get("classroomId") ?? "");
-  const status = String(formData.get("status") ?? "ACTIVE");
-  const validStatus = ["ACTIVE", "COMPLETED", "WITHDRAWN"];
 
   const enr = await db.query.enrollments.findFirst({
-    where: and(eq(enrollments.id, enrollmentId), eq(enrollments.schoolId, ctx.schoolId)),
+    where: and(eq(enrollments.id, edit.enrollmentId), eq(enrollments.schoolId, ctx.schoolId)),
   });
-  if (!enr) throw new Error("Unknown enrolment.");
-  if (!validStatus.includes(status)) throw new Error("Invalid status.");
+  if (!enr) return { ok: false, error: "Unknown enrolment." };
 
-  const grade = gradeLevelId
-    ? await db.query.gradeLevels.findFirst({
-        where: and(eq(gradeLevels.id, gradeLevelId), eq(gradeLevels.schoolId, ctx.schoolId)),
-      })
-    : null;
+  const status = edit.status ?? enr.status;
+  if (!["ACTIVE", "COMPLETED", "WITHDRAWN"].includes(status)) {
+    return { ok: false, error: "Invalid status." };
+  }
 
-  // A classroom only sticks if it belongs to the (possibly new) grade + this year.
+  const targetGradeId =
+    edit.gradeLevelId &&
+    (await db.query.gradeLevels.findFirst({
+      where: and(eq(gradeLevels.id, edit.gradeLevelId), eq(gradeLevels.schoolId, ctx.schoolId)),
+    }))
+      ? edit.gradeLevelId
+      : enr.gradeLevelId;
+
+  // A class only sticks if it's for this year and the (possibly new) grade.
   let classroomOk: string | null = null;
-  if (classroomId) {
-    const cls = await db.query.classrooms.findFirst({ where: eq(classrooms.id, classroomId) });
-    if (
-      cls &&
-      cls.academicYearId === enr.academicYearId &&
-      cls.gradeLevelId === (grade?.id ?? enr.gradeLevelId)
-    ) {
+  if (edit.classroomId) {
+    const cls = await db.query.classrooms.findFirst({ where: eq(classrooms.id, edit.classroomId) });
+    if (cls && cls.academicYearId === enr.academicYearId && cls.gradeLevelId === targetGradeId) {
       classroomOk = cls.id;
     }
   }
@@ -51,23 +55,55 @@ export async function updateEnrollmentAction(formData: FormData) {
   await db
     .update(enrollments)
     .set({
-      gradeLevelId: grade?.id ?? enr.gradeLevelId,
-      classroomId: classroomOk,
+      gradeLevelId: targetGradeId,
+      classroomId: edit.classroomId === undefined ? enr.classroomId : classroomOk,
       status: status as "ACTIVE",
     })
-    .where(eq(enrollments.id, enrollmentId));
+    .where(eq(enrollments.id, edit.enrollmentId));
 
-  // Keep the student record's status roughly in step.
   if (status === "WITHDRAWN") {
     await db.update(students).set({ status: "WITHDRAWN" }).where(eq(students.id, enr.studentId));
-  } else if (status === "ACTIVE") {
+  } else if (status === "ACTIVE" && enr.status !== "ACTIVE") {
     await db.update(students).set({ status: "ENROLLED" }).where(eq(students.id, enr.studentId));
   }
 
   revalidatePath("/dashboard/enrollments");
   revalidatePath("/dashboard/students");
   revalidatePath(`/dashboard/students/${enr.studentId}`);
-  redirect(`/dashboard/enrollments${formData.get("year") ? `?year=${formData.get("year")}` : ""}`);
+  return { ok: true };
+}
+
+// Move several students at once into one class (and its grade).
+export async function bulkMoveEnrollments(input: {
+  enrollmentIds: string[];
+  classroomId: string;
+}): Promise<{ ok: boolean; moved: number; error?: string }> {
+  const ctx = await requireCan("enrollments");
+  if (!input.enrollmentIds?.length) return { ok: false, moved: 0, error: "Nothing selected." };
+
+  const cls = await db.query.classrooms.findFirst({
+    where: and(eq(classrooms.id, input.classroomId), eq(classrooms.schoolId, ctx.schoolId)),
+  });
+  if (!cls) return { ok: false, moved: 0, error: "Unknown class." };
+
+  const rows = await db.query.enrollments.findMany({
+    where: and(
+      inArray(enrollments.id, input.enrollmentIds),
+      eq(enrollments.schoolId, ctx.schoolId),
+      eq(enrollments.academicYearId, cls.academicYearId),
+    ),
+    columns: { id: true },
+  });
+  if (!rows.length) return { ok: false, moved: 0, error: "Those enrolments aren't in this year." };
+
+  await db
+    .update(enrollments)
+    .set({ gradeLevelId: cls.gradeLevelId, classroomId: cls.id })
+    .where(inArray(enrollments.id, rows.map((r) => r.id)));
+
+  revalidatePath("/dashboard/enrollments");
+  revalidatePath("/dashboard/students");
+  return { ok: true, moved: rows.length };
 }
 
 export async function createClassroomAction(formData: FormData) {

@@ -99,10 +99,16 @@ export async function GET(req: Request) {
   const startYear = 2025;
   if (!school) {
     const passwordHash = await bcrypt.hash("password123", 10);
-    const [owner] = await db
-      .insert(users)
-      .values({ name: "Hala Abdel Aziz", email: "admin@nels.test", passwordHash })
-      .returning();
+    // Reuse the demo user across ?reset runs (users aren't school-scoped).
+    let owner = await db.query.users.findFirst({ where: eq(users.email, "admin@nels.test") });
+    if (owner) {
+      await db.update(users).set({ passwordHash }).where(eq(users.id, owner.id));
+    } else {
+      [owner] = await db
+        .insert(users)
+        .values({ name: "Hala Abdel Aziz", email: "admin@nels.test", passwordHash })
+        .returning();
+    }
     [school] = await db
       .insert(schools)
       .values({

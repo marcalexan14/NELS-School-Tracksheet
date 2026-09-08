@@ -66,6 +66,10 @@ const en: Dict = {
   no_students: "No students match your search.",
   all_grades: "All grades",
   all_statuses: "All statuses",
+  all_classes: "All classes",
+  move_to_class: "Move to",
+  move: "Move",
+  selected_count: "selected",
 
   // student profile
   tab_overview: "Overview",
@@ -220,6 +224,10 @@ const ar: Dict = {
   no_students: "لا يوجد طلاب مطابقون للبحث.",
   all_grades: "كل الصفوف",
   all_statuses: "كل الحالات",
+  all_classes: "كل الفصول",
+  move_to_class: "نقل إلى",
+  move: "نقل",
+  selected_count: "محدد",
 
   tab_overview: "بيانات عامة",
   tab_guardians: "أولياء الأمور",

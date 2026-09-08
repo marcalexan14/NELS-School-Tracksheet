@@ -220,7 +220,7 @@ export default async function StudentProfilePage({
                           <Badge variant="secondary">{enumLabel(locale, e.status)}</Badge>
                           {can(ctx.role, "enrollments") && (
                             <Link
-                              href={`/dashboard/enrollments?year=${e.academicYearId}&edit=${e.id}`}
+                              href={`/dashboard/enrollments?year=${e.academicYearId}&focus=${student.code}`}
                               className="text-xs font-medium text-primary hover:underline"
                             >
                               {t("edit")}
