@@ -87,6 +87,26 @@ names are always shown in Arabic regardless.
 Save. You land on the student's profile with a generated code like
 `NELS-2025-0042`.
 
+### Bulk import from Excel
+
+For a whole class or a fresh year, **Students → Import from Excel**:
+
+1. **Download template (.xlsx)** — it has a `Students` sheet with the column
+   headers and one example row, and a `Grades` sheet listing the exact grade
+   names to put in the *Grade* column.
+2. Fill one row per student. Required: first name, family name, gender, date of
+   birth, guardian name, guardian phone. Everything else is optional — leave the
+   *Grade* column blank to import students as applicants without enrolling them.
+   - Gender accepts `male` / `female` or `ذكر` / `أنثى`; religion accepts
+     `muslim` / `christian` / `other` or the Arabic words; dates accept
+     `YYYY-MM-DD`, `DD/MM/YYYY`, or Excel date cells.
+3. **Upload and preview** — every row is checked and shown with a green *ready*
+   or the specific problem ("Date of birth not understood", "Grade not found").
+4. **Import N students** — creates the valid rows (student + primary guardian,
+   and an enrolment if a grade was given). Rows with errors are skipped; fix them
+   in Excel and re-upload to add just those. Students already on file (matched by
+   national ID) are skipped, so re-running is safe.
+
 ### The student profile
 
 Five tabs:
@@ -111,6 +131,10 @@ Five tabs:
 3. **Enrol student** — pick a student not yet enrolled this year, a grade, and
    (optionally) a class. Applicants become Enrolled automatically.
 4. The table at the bottom lists everyone enrolled this year with their class.
+   Click **Edit** on any row to move that student to a different grade or class,
+   or set the enrolment to *Withdrawn* (which also marks the student withdrawn).
+   The same **Edit** link appears on each row of a student's *Enrolment history*
+   tab. Changing the grade drops a class that no longer fits.
 
 ---
 
