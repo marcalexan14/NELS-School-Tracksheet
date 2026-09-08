@@ -32,7 +32,7 @@ export default async function SetupPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="schoolName">School name</Label>
-              <Input id="schoolName" name="schoolName" required placeholder="Nile English Language School" />
+              <Input id="schoolName" name="schoolName" required placeholder="New Egyptian Language School" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="shortName">Short code</Label>

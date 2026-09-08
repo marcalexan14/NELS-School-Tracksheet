@@ -112,7 +112,7 @@ export async function GET(req: Request) {
     [school] = await db
       .insert(schools)
       .values({
-        name: "Nile English Language School",
+        name: "New Egyptian Language School",
         shortName: "NELS",
         educationDirectorate: "إدارة مصر الجديدة التعليمية",
         address: "Ard El Golf, Heliopolis, Cairo",

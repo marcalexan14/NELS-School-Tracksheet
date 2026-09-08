@@ -1,7 +1,8 @@
 # NELS Tracking Sheet
 
-A student register and school-fee tracking system for the **Egyptian national
-education system** — Kindergarten (KG1) through Thanaweya Amma (Secondary 3).
+The tracking system for the **New Egyptian Language School (NELS)** — a student
+register and school-fee tracker for the **Egyptian national education system**,
+Kindergarten (KG1) through Thanaweya Amma (Secondary 3).
 
 Built for a single school with multiple staff users. Tracks the full student
 database, per-grade fee plans, instalments, receipts, discounts, and income by
@@ -95,7 +96,7 @@ With the dev server running:
 curl http://localhost:3000/api/dev/seed
 ```
 
-Creates a demo school ("Nile English Language School"), ~90 students with
+Creates a demo school ("New Egyptian Language School"), ~90 students with
 guardians and enrolments across every grade, fee plans, generated bills, and a
 spread of payments. Log in with **`admin@nels.test`** / **`password123`**.
 `?reset` rebuilds it. This route is disabled when `NODE_ENV=production`.
