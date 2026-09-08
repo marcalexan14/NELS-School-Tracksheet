@@ -24,6 +24,7 @@ academic year, stage, grade, and fee type. English and Arabic (RTL) interface.
 | **Payments** | Record a payment (cash / InstaPay / bank transfer / cheque / card), auto-allocated across the student's open instalments oldest-due-first, or targeted at one fee. Every payment gets a sequential receipt number and a printable receipt. |
 | **Dashboard & reports** | Fees billed, collected, collection rate, outstanding, overdue instalments. Collections by month, billed vs collected by stage, outstanding by grade, income by fee type, income by grade, collections by payment method. Everything scoped to the academic year picked in the top bar. |
 | **Staff & roles** | Owner, Admin, Registrar, Accountant, Teacher, Viewer. Registrars manage students and enrolments; accountants manage fees and payments; admins and the owner manage settings and staff; viewers read only. |
+| **Export & backup** | Download every record as one multi-sheet Excel workbook (one sheet per table, readable columns + IDs), scoped to all years or one. Owner / Admin / Accountant. |
 | **Language** | Settings toggles the whole app between English and Arabic. Arabic switches the layout to right-to-left. |
 
 All money is in Egyptian pounds (EGP). Income figures are derived from the

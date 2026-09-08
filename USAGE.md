@@ -245,6 +245,21 @@ New siblings and transfers: register them in Admissions and enrol them normally.
 
 ---
 
+## 9. Backups
+
+**Export & backup** (Owner / Admin / Accountant). Pick **All data** or one
+academic year and click **Download .xlsx**. You get one workbook with a sheet
+per table — students, guardians, enrolments, charges, instalments, payments,
+allocations, discounts, fee plans, the calendar, staff, and a `_Backup info`
+sheet with row counts and the export time.
+
+Do this regularly (weekly during term, before and after promoting the cohort)
+and keep the files off the server — email them to yourself, drop them in a
+shared drive. Columns are readable (names, grades, amounts) with the database
+IDs kept at the end so the file can be re-imported if you ever need to restore.
+
+---
+
 ## Tips
 
 - **The year picker is everything.** If a screen looks empty, check you're on
