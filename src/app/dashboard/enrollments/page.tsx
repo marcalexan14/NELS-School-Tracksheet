@@ -1,14 +1,16 @@
+import Link from "next/link";
 import { requireStaff, can } from "@/lib/session";
 import { resolveYear, listYears } from "@/lib/academic";
-import { getTranslator, type Locale } from "@/lib/i18n";
+import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
 import { fullName } from "@/lib/students";
 import { db } from "@/db";
 import { classrooms, enrollments, gradeLevels, students } from "@/db/schema";
-import { and, eq, notInArray, sql } from "drizzle-orm";
+import { and, eq, notInArray, or, sql } from "drizzle-orm";
 import {
   enrollStudentAction,
   createClassroomAction,
   promoteCohortAction,
+  updateEnrollmentAction,
 } from "@/app/actions/enrollments";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,7 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export default async function EnrollmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string }>;
+  searchParams: Promise<{ year?: string; edit?: string }>;
 }) {
   const ctx = await requireStaff();
   const locale = (ctx.school.locale as Locale) ?? "en";
@@ -197,7 +199,16 @@ export default async function EnrollmentsPage({
         <Card>
           <CardHeader><CardTitle className="text-base">{active.name}</CardTitle></CardHeader>
           <CardContent className="p-0">
-            <EnrolledTable schoolId={ctx.schoolId} yearId={active.id} locale={locale} t={t} />
+            <EnrolledTable
+              yearId={active.id}
+              yearParam={sp.year}
+              editId={sp.edit}
+              editable={editable}
+              grades={grades}
+              classrooms={yearClassrooms}
+              locale={locale}
+              t={t}
+            />
           </CardContent>
         </Card>
       )}
@@ -205,22 +216,41 @@ export default async function EnrollmentsPage({
   );
 }
 
+type GradeRow = { id: string; name: string; nameAr: string };
+type ClassRow = { id: string; name: string; gradeLevelId: string };
+
 async function EnrolledTable({
   yearId,
+  yearParam,
+  editId,
+  editable,
+  grades,
+  classrooms: classList,
   locale,
   t,
 }: {
-  schoolId: string;
   yearId: string;
+  yearParam?: string;
+  editId?: string;
+  editable: boolean;
+  grades: GradeRow[];
+  classrooms: ClassRow[];
   locale: Locale;
   t: ReturnType<typeof getTranslator>;
 }) {
   const rows = await db.query.enrollments.findMany({
-    where: and(eq(enrollments.academicYearId, yearId), eq(enrollments.status, "ACTIVE")),
+    where: and(
+      eq(enrollments.academicYearId, yearId),
+      editId
+        ? or(eq(enrollments.status, "ACTIVE"), eq(enrollments.id, editId))
+        : eq(enrollments.status, "ACTIVE"),
+    ),
     with: { student: true, gradeLevel: true, classroom: true },
     orderBy: (e, { asc }) => asc(e.gradeLevelId),
     limit: 500,
   });
+
+  const q = yearParam ? `year=${yearParam}&` : "";
 
   return (
     <Table>
@@ -230,20 +260,64 @@ async function EnrolledTable({
           <TableHead>{t("student_name")}</TableHead>
           <TableHead>{t("grade")}</TableHead>
           <TableHead>{t("classroom")}</TableHead>
+          {editable && <TableHead className="w-40 text-right">{t("actions")}</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
         {rows.length === 0 && (
-          <TableRow><TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">—</TableCell></TableRow>
+          <TableRow><TableCell colSpan={editable ? 5 : 4} className="py-8 text-center text-sm text-muted-foreground">—</TableCell></TableRow>
         )}
-        {rows.map((e) => (
-          <TableRow key={e.id}>
-            <TableCell className="font-mono text-xs text-muted-foreground">{e.student.code}</TableCell>
-            <TableCell className="font-ar">{fullName(e.student)}</TableCell>
-            <TableCell>{locale === "ar" ? e.gradeLevel.nameAr : e.gradeLevel.name}</TableCell>
-            <TableCell className="text-muted-foreground">{e.classroom?.name ?? <Badge variant="outline">{t("unassigned")}</Badge>}</TableCell>
-          </TableRow>
-        ))}
+        {rows.map((e) =>
+          editable && editId === e.id ? (
+            <TableRow key={e.id} className="bg-muted/40 align-top">
+              <TableCell className="font-mono text-xs text-muted-foreground">{e.student.code}</TableCell>
+              <TableCell className="font-ar">{fullName(e.student)}</TableCell>
+              <TableCell colSpan={2}>
+                <form action={updateEnrollmentAction} className="flex flex-wrap items-center gap-2">
+                  <input type="hidden" name="enrollmentId" value={e.id} />
+                  {yearParam && <input type="hidden" name="year" value={yearParam} />}
+                  <select name="gradeLevelId" defaultValue={e.gradeLevelId} className="h-8 rounded-md border border-border bg-background px-2 text-sm">
+                    {grades.map((g) => (
+                      <option key={g.id} value={g.id}>{locale === "ar" ? g.nameAr : g.name}</option>
+                    ))}
+                  </select>
+                  <select name="classroomId" defaultValue={e.classroomId ?? ""} className="h-8 rounded-md border border-border bg-background px-2 text-sm">
+                    <option value="">{t("unassigned")}</option>
+                    {classList.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {(grades.find((g) => g.id === c.gradeLevelId)?.[locale === "ar" ? "nameAr" : "name"]) ?? ""} · {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select name="status" defaultValue="ACTIVE" className="h-8 rounded-md border border-border bg-background px-2 text-sm">
+                    <option value="ACTIVE">{enumLabel(locale, "ACTIVE")}</option>
+                    <option value="COMPLETED">{enumLabel(locale, "COMPLETED")}</option>
+                    <option value="WITHDRAWN">{enumLabel(locale, "WITHDRAWN")}</option>
+                  </select>
+                  <Button type="submit" size="sm">{t("save")}</Button>
+                  <Link href={`/dashboard/enrollments?${q.replace(/&$/, "")}`} className="text-xs text-muted-foreground hover:text-foreground">
+                    {t("cancel")}
+                  </Link>
+                </form>
+              </TableCell>
+              <TableCell></TableCell>
+            </TableRow>
+          ) : (
+            <TableRow key={e.id}>
+              <TableCell className="font-mono text-xs text-muted-foreground">{e.student.code}</TableCell>
+              <TableCell className="font-ar">{fullName(e.student)}</TableCell>
+              <TableCell>{locale === "ar" ? e.gradeLevel.nameAr : e.gradeLevel.name}</TableCell>
+              <TableCell className="text-muted-foreground">{e.classroom?.name ?? <Badge variant="outline">{t("unassigned")}</Badge>}</TableCell>
+              {editable && (
+                <TableCell className="text-right">
+                  <Link href={`/dashboard/enrollments?${q}edit=${e.id}`} className="text-xs font-medium text-primary hover:underline">
+                    {t("edit")}
+                  </Link>
+                </TableCell>
+              )}
+            </TableRow>
+          ),
+        )}
       </TableBody>
     </Table>
   );

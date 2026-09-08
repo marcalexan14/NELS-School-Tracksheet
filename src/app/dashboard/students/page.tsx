@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search, UserPlus } from "lucide-react";
+import { Search, UserPlus, FileSpreadsheet } from "lucide-react";
 import { requireStaff, can } from "@/lib/session";
 import { resolveYear } from "@/lib/academic";
 import { listStudents } from "@/lib/students";
@@ -53,10 +53,16 @@ export default async function StudentsPage({
           </p>
         </div>
         {can(ctx.role, "students") && (
-          <Button nativeButton={false} render={<Link href="/dashboard/admissions" />}>
-            <UserPlus className="h-4 w-4" />
-            {t("add_student")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" nativeButton={false} render={<Link href="/dashboard/students/import" />}>
+              <FileSpreadsheet className="h-4 w-4" />
+              {t("import_excel")}
+            </Button>
+            <Button nativeButton={false} render={<Link href="/dashboard/admissions" />}>
+              <UserPlus className="h-4 w-4" />
+              {t("add_student")}
+            </Button>
+          </div>
         )}
       </div>
 

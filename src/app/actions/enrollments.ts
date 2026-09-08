@@ -13,6 +13,63 @@ import {
 } from "@/db/schema";
 import { requireCan } from "@/lib/session";
 
+// Edit an existing placement: move the student to a different grade / class, or
+// change the enrolment status (active / completed / withdrawn).
+export async function updateEnrollmentAction(formData: FormData) {
+  const ctx = await requireCan("enrollments");
+  const enrollmentId = String(formData.get("enrollmentId") ?? "");
+  const gradeLevelId = String(formData.get("gradeLevelId") ?? "");
+  const classroomId = String(formData.get("classroomId") ?? "");
+  const status = String(formData.get("status") ?? "ACTIVE");
+  const validStatus = ["ACTIVE", "COMPLETED", "WITHDRAWN"];
+
+  const enr = await db.query.enrollments.findFirst({
+    where: and(eq(enrollments.id, enrollmentId), eq(enrollments.schoolId, ctx.schoolId)),
+  });
+  if (!enr) throw new Error("Unknown enrolment.");
+  if (!validStatus.includes(status)) throw new Error("Invalid status.");
+
+  const grade = gradeLevelId
+    ? await db.query.gradeLevels.findFirst({
+        where: and(eq(gradeLevels.id, gradeLevelId), eq(gradeLevels.schoolId, ctx.schoolId)),
+      })
+    : null;
+
+  // A classroom only sticks if it belongs to the (possibly new) grade + this year.
+  let classroomOk: string | null = null;
+  if (classroomId) {
+    const cls = await db.query.classrooms.findFirst({ where: eq(classrooms.id, classroomId) });
+    if (
+      cls &&
+      cls.academicYearId === enr.academicYearId &&
+      cls.gradeLevelId === (grade?.id ?? enr.gradeLevelId)
+    ) {
+      classroomOk = cls.id;
+    }
+  }
+
+  await db
+    .update(enrollments)
+    .set({
+      gradeLevelId: grade?.id ?? enr.gradeLevelId,
+      classroomId: classroomOk,
+      status: status as "ACTIVE",
+    })
+    .where(eq(enrollments.id, enrollmentId));
+
+  // Keep the student record's status roughly in step.
+  if (status === "WITHDRAWN") {
+    await db.update(students).set({ status: "WITHDRAWN" }).where(eq(students.id, enr.studentId));
+  } else if (status === "ACTIVE") {
+    await db.update(students).set({ status: "ENROLLED" }).where(eq(students.id, enr.studentId));
+  }
+
+  revalidatePath("/dashboard/enrollments");
+  revalidatePath("/dashboard/students");
+  revalidatePath(`/dashboard/students/${enr.studentId}`);
+  redirect(`/dashboard/enrollments${formData.get("year") ? `?year=${formData.get("year")}` : ""}`);
+}
+
 export async function createClassroomAction(formData: FormData) {
   const ctx = await requireCan("enrollments");
   const academicYearId = String(formData.get("academicYearId") ?? "");

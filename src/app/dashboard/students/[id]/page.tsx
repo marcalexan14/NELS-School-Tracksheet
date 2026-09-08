@@ -215,7 +215,19 @@ export default async function StudentProfilePage({
                       <TableCell>{locale === "ar" ? e.gradeLevel.nameAr : e.gradeLevel.name}</TableCell>
                       <TableCell className="text-muted-foreground">{e.classroom?.name ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{e.enrollmentDate}</TableCell>
-                      <TableCell><Badge variant="secondary">{enumLabel(locale, e.status)}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">{enumLabel(locale, e.status)}</Badge>
+                          {can(ctx.role, "enrollments") && (
+                            <Link
+                              href={`/dashboard/enrollments?year=${e.academicYearId}&edit=${e.id}`}
+                              className="text-xs font-medium text-primary hover:underline"
+                            >
+                              {t("edit")}
+                            </Link>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
