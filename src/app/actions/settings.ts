@@ -38,35 +38,48 @@ export async function updateSchoolAction(formData: FormData) {
   revalidatePath("/dashboard", "layout");
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Splits [start, end] into `count` consecutive term ranges.
+function splitTerms(start: string, end: string, count: number) {
+  const s = Date.parse(start);
+  const e = Date.parse(end);
+  const step = (e - s) / count;
+  const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+  return Array.from({ length: count }, (_, i) => ({
+    name: `Term ${i + 1}`,
+    ordinal: i + 1,
+    startDate: i === 0 ? start : iso(s + step * i + 86_400_000),
+    endDate: i === count - 1 ? end : iso(s + step * (i + 1)),
+  }));
+}
+
 export async function addAcademicYearAction(formData: FormData) {
   const ctx = await requireCan("settings");
-  const startYear = Number(formData.get("startYear"));
-  if (!Number.isFinite(startYear) || startYear < 2000 || startYear > 2100) {
-    throw new Error("Enter a valid start year.");
-  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const startDate = String(formData.get("startDate") ?? "");
+  const endDate = String(formData.get("endDate") ?? "");
+  const termCount = Math.max(1, Math.min(4, Number(formData.get("termCount") ?? 2)));
   const makeCurrent = formData.get("makeCurrent") === "on";
 
-  const name = `${startYear} / ${startYear + 1}`;
+  if (!name) throw new Error("Give the year a name (e.g. \"2025 / 2026\").");
+  if (!ISO_DATE.test(startDate) || !ISO_DATE.test(endDate)) throw new Error("Pick a start and end date.");
+  if (Date.parse(endDate) <= Date.parse(startDate)) throw new Error("The end date must be after the start date.");
+
   const existing = await db.query.academicYears.findFirst({
     where: and(eq(academicYears.schoolId, ctx.schoolId), eq(academicYears.name, name)),
   });
-  if (existing) throw new Error(`${name} already exists.`);
+  if (existing) throw new Error(`"${name}" already exists.`);
 
   const [year] = await db
     .insert(academicYears)
-    .values({
-      schoolId: ctx.schoolId,
-      name,
-      startDate: `${startYear}-09-01`,
-      endDate: `${startYear + 1}-06-30`,
-      isCurrent: makeCurrent,
-    })
+    .values({ schoolId: ctx.schoolId, name, startDate, endDate, isCurrent: makeCurrent })
     .returning();
 
-  await db.insert(terms).values([
-    { academicYearId: year.id, name: "Term 1", ordinal: 1, startDate: `${startYear}-09-01`, endDate: `${startYear + 1}-01-31` },
-    { academicYearId: year.id, name: "Term 2", ordinal: 2, startDate: `${startYear + 1}-02-01`, endDate: `${startYear + 1}-06-30` },
-  ]);
+  await db.insert(terms).values(
+    splitTerms(startDate, endDate, termCount).map((t) => ({ academicYearId: year.id, ...t })),
+  );
 
   if (makeCurrent) {
     await db
@@ -77,6 +90,76 @@ export async function addAcademicYearAction(formData: FormData) {
 
   revalidatePath("/dashboard/settings");
   revalidatePath("/dashboard", "layout");
+}
+
+// Edit a year's name / dates. Optionally re-split its terms to the new range.
+export async function updateAcademicYearAction(formData: FormData) {
+  const ctx = await requireCan("settings");
+  const yearId = String(formData.get("yearId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const startDate = String(formData.get("startDate") ?? "");
+  const endDate = String(formData.get("endDate") ?? "");
+  const resetTerms = formData.get("resetTerms") === "on";
+
+  const year = await db.query.academicYears.findFirst({
+    where: and(eq(academicYears.id, yearId), eq(academicYears.schoolId, ctx.schoolId)),
+  });
+  if (!year) throw new Error("Unknown academic year.");
+  if (!name) throw new Error("The year needs a name.");
+  if (!ISO_DATE.test(startDate) || !ISO_DATE.test(endDate)) throw new Error("Pick a start and end date.");
+  if (Date.parse(endDate) <= Date.parse(startDate)) throw new Error("The end date must be after the start date.");
+
+  const clash = await db.query.academicYears.findFirst({
+    where: and(
+      eq(academicYears.schoolId, ctx.schoolId),
+      eq(academicYears.name, name),
+      ne(academicYears.id, yearId),
+    ),
+  });
+  if (clash) throw new Error(`Another year is already called "${name}".`);
+
+  await db.update(academicYears).set({ name, startDate, endDate }).where(eq(academicYears.id, yearId));
+
+  if (resetTerms) {
+    const existing = await db.query.terms.findMany({ where: eq(terms.academicYearId, yearId) });
+    await db.delete(terms).where(eq(terms.academicYearId, yearId));
+    await db.insert(terms).values(
+      splitTerms(startDate, endDate, Math.max(1, existing.length || 2)).map((t) => ({
+        academicYearId: yearId,
+        ...t,
+      })),
+    );
+  }
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard", "layout");
+}
+
+// Rename / re-date the terms of one year from `name_<i>`, `start_<i>`, `end_<i>`.
+export async function updateTermsAction(formData: FormData) {
+  const ctx = await requireCan("settings");
+  const yearId = String(formData.get("yearId") ?? "");
+
+  const year = await db.query.academicYears.findFirst({
+    where: and(eq(academicYears.id, yearId), eq(academicYears.schoolId, ctx.schoolId)),
+    with: { terms: { orderBy: (tm, { asc }) => asc(tm.ordinal) } },
+  });
+  if (!year) throw new Error("Unknown academic year.");
+
+  for (const [i, term] of year.terms.entries()) {
+    const name = String(formData.get(`name_${i}`) ?? "").trim() || term.name;
+    const startDate = String(formData.get(`start_${i}`) ?? "");
+    const endDate = String(formData.get(`end_${i}`) ?? "");
+    if (!ISO_DATE.test(startDate) || !ISO_DATE.test(endDate)) {
+      throw new Error(`Term ${i + 1} needs a start and end date.`);
+    }
+    if (Date.parse(endDate) <= Date.parse(startDate)) {
+      throw new Error(`Term ${i + 1}'s end date must be after its start date.`);
+    }
+    await db.update(terms).set({ name, startDate, endDate }).where(eq(terms.id, term.id));
+  }
+
+  revalidatePath("/dashboard/settings");
 }
 
 export async function setCurrentYearAction(formData: FormData) {

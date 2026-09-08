@@ -78,7 +78,13 @@ const DEFAULT_FEE_ITEMS: {
 
 // Creates the ladder, a starting academic year with two terms, and default fee
 // items for a freshly created school. Safe to call once, right after insert.
-export async function provisionSchool(schoolId: string, startYear: number) {
+//
+// `year` sets the first academic year — a name ("2025 / 2026") and its exact
+// start / end dates. Terms split the range in two.
+export async function provisionSchool(
+  schoolId: string,
+  year: { name: string; startDate: string; endDate: string },
+) {
   let ordinal = 0;
   for (const [stageIndex, stage] of LADDER.entries()) {
     const [stageRow] = await db
@@ -104,32 +110,25 @@ export async function provisionSchool(schoolId: string, startYear: number) {
     }
   }
 
-  const [year] = await db
+  const [row] = await db
     .insert(academicYears)
     .values({
       schoolId,
-      name: `${startYear} / ${startYear + 1}`,
-      startDate: `${startYear}-09-01`,
-      endDate: `${startYear + 1}-06-30`,
+      name: year.name,
+      startDate: year.startDate,
+      endDate: year.endDate,
       isCurrent: true,
     })
     .returning();
 
+  // Two terms, split evenly across the year's range.
+  const s = Date.parse(year.startDate);
+  const e = Date.parse(year.endDate);
+  const mid = new Date(s + (e - s) / 2).toISOString().slice(0, 10);
+  const midNext = new Date(s + (e - s) / 2 + 86_400_000).toISOString().slice(0, 10);
   await db.insert(terms).values([
-    {
-      academicYearId: year.id,
-      name: "Term 1",
-      ordinal: 1,
-      startDate: `${startYear}-09-01`,
-      endDate: `${startYear + 1}-01-31`,
-    },
-    {
-      academicYearId: year.id,
-      name: "Term 2",
-      ordinal: 2,
-      startDate: `${startYear + 1}-02-01`,
-      endDate: `${startYear + 1}-06-30`,
-    },
+    { academicYearId: row.id, name: "Term 1", ordinal: 1, startDate: year.startDate, endDate: mid },
+    { academicYearId: row.id, name: "Term 2", ordinal: 2, startDate: midNext, endDate: year.endDate },
   ]);
 
   await db.insert(feeItems).values(
@@ -141,7 +140,7 @@ export async function provisionSchool(schoolId: string, startYear: number) {
     })),
   );
 
-  return { yearId: year.id };
+  return { yearId: row.id };
 }
 
 export { LADDER, DEFAULT_FEE_ITEMS };

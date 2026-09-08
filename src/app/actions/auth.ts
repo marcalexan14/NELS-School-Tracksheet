@@ -19,13 +19,23 @@ export async function setupAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const startYear = Number(formData.get("startYear") ?? new Date().getFullYear());
+
+  const yearName = String(formData.get("yearName") ?? "").trim();
+  const yearStart = String(formData.get("yearStart") ?? "");
+  const yearEnd = String(formData.get("yearEnd") ?? "");
+  const iso = /^\d{4}-\d{2}-\d{2}$/;
 
   if (!schoolName || !name || !email || !password) {
     throw new Error("School name, your name, email, and password are all required.");
   }
   if (password.length < 8) {
     throw new Error("Password must be at least 8 characters.");
+  }
+  if (!yearName || !iso.test(yearStart) || !iso.test(yearEnd)) {
+    throw new Error("Choose the academic year and its start / end dates.");
+  }
+  if (Date.parse(yearEnd) <= Date.parse(yearStart)) {
+    throw new Error("The academic year's end date must be after its start date.");
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -47,7 +57,7 @@ export async function setupAction(formData: FormData) {
     title: "Principal",
   });
 
-  await provisionSchool(school.id, Number.isFinite(startYear) ? startYear : new Date().getFullYear());
+  await provisionSchool(school.id, { name: yearName, startDate: yearStart, endDate: yearEnd });
 
   await signIn("credentials", { email, password, redirectTo: "/dashboard" });
 }

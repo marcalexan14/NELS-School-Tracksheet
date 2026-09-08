@@ -1,12 +1,13 @@
 import { requireStaff, can } from "@/lib/session";
-import { listYears } from "@/lib/academic";
 import { db } from "@/db";
-import { staff, gradeLevels, stages } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { staff, gradeLevels, stages, academicYears } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
 import { getTranslator, enumLabel, LOCALES, type Locale } from "@/lib/i18n";
 import {
   updateSchoolAction,
   addAcademicYearAction,
+  updateAcademicYearAction,
+  updateTermsAction,
   setCurrentYearAction,
   addStaffAction,
   updateStaffRoleAction,
@@ -26,7 +27,11 @@ export default async function SettingsPage() {
   const t = getTranslator(locale);
   const editable = can(ctx.role, "settings");
 
-  const years = await listYears(ctx.schoolId);
+  const years = await db.query.academicYears.findMany({
+    where: eq(academicYears.schoolId, ctx.schoolId),
+    orderBy: desc(academicYears.startDate),
+    with: { terms: { orderBy: (tm, { asc }) => asc(tm.ordinal) } },
+  });
   const team = await db.query.staff.findMany({
     where: eq(staff.schoolId, ctx.schoolId),
     with: { user: true },
@@ -130,47 +135,94 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-base">{t("academic_years")}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("academic_year")}</TableHead>
-                <TableHead>Start</TableHead>
-                <TableHead>End</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {years.map((y) => (
-                <TableRow key={y.id}>
-                  <TableCell className="font-medium">
-                    {y.name}
-                    {y.isCurrent && <Badge className="ms-2">{t("current")}</Badge>}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{y.startDate}</TableCell>
-                  <TableCell className="text-muted-foreground">{y.endDate}</TableCell>
-                  <TableCell className="text-right">
-                    {!y.isCurrent && editable && (
-                      <form action={setCurrentYearAction}>
-                        <input type="hidden" name="yearId" value={y.id} />
-                        <Button type="submit" variant="ghost" size="sm">{t("make_current")}</Button>
-                      </form>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {editable && (
-            <form action={addAcademicYearAction} className="flex flex-wrap items-end gap-3 border-t border-border pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="startYear">New year starts</Label>
-                <Input id="startYear" name="startYear" type="number" defaultValue={thisYear} min={2000} max={2100} className="w-32" />
+        <CardContent className="space-y-3">
+          {years.map((y) => (
+            <div key={y.id} className="rounded-lg border border-border p-3">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="font-medium">{y.name}</span>
+                {y.isCurrent ? (
+                  <Badge>{t("current")}</Badge>
+                ) : editable ? (
+                  <form action={setCurrentYearAction}>
+                    <input type="hidden" name="yearId" value={y.id} />
+                    <Button type="submit" variant="ghost" size="sm" className="h-6">{t("make_current")}</Button>
+                  </form>
+                ) : null}
               </div>
-              <label className="flex items-center gap-2 pb-2 text-sm">
-                <input type="checkbox" name="makeCurrent" className="h-4 w-4" /> {t("make_current")}
+
+              {editable ? (
+                <form action={updateAcademicYearAction} className="flex flex-wrap items-end gap-2">
+                  <input type="hidden" name="yearId" value={y.id} />
+                  <div className="space-y-1">
+                    <Label className="text-xs" htmlFor={`yn-${y.id}`}>{t("academic_year")}</Label>
+                    <Input id={`yn-${y.id}`} name="name" defaultValue={y.name} className="h-8 w-36" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs" htmlFor={`ys-${y.id}`}>Starts</Label>
+                    <Input id={`ys-${y.id}`} name="startDate" type="date" defaultValue={y.startDate} className="h-8 w-40" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs" htmlFor={`ye-${y.id}`}>Ends</Label>
+                    <Input id={`ye-${y.id}`} name="endDate" type="date" defaultValue={y.endDate} className="h-8 w-40" />
+                  </div>
+                  <label className="flex items-center gap-1.5 pb-1.5 text-xs text-muted-foreground">
+                    <input type="checkbox" name="resetTerms" className="h-3.5 w-3.5" /> re-split terms
+                  </label>
+                  <Button type="submit" size="sm" className="h-8">{t("save")}</Button>
+                </form>
+              ) : (
+                <p className="text-sm text-muted-foreground">{y.startDate} &rarr; {y.endDate}</p>
+              )}
+
+              <details className="mt-2 text-sm">
+                <summary className="cursor-pointer text-xs text-muted-foreground">
+                  {y.terms.length} terms
+                </summary>
+                {editable ? (
+                  <form action={updateTermsAction} className="mt-2 space-y-2">
+                    <input type="hidden" name="yearId" value={y.id} />
+                    {y.terms.map((tm, i) => (
+                      <div key={tm.id} className="flex flex-wrap items-end gap-2">
+                        <Input name={`name_${i}`} defaultValue={tm.name} className="h-8 w-28" />
+                        <Input name={`start_${i}`} type="date" defaultValue={tm.startDate} className="h-8 w-40" />
+                        <Input name={`end_${i}`} type="date" defaultValue={tm.endDate} className="h-8 w-40" />
+                      </div>
+                    ))}
+                    <Button type="submit" size="sm" className="h-8">{t("save")}</Button>
+                  </form>
+                ) : (
+                  <ul className="mt-1 text-xs text-muted-foreground">
+                    {y.terms.map((tm) => (
+                      <li key={tm.id}>{tm.name}: {tm.startDate} &rarr; {tm.endDate}</li>
+                    ))}
+                  </ul>
+                )}
+              </details>
+            </div>
+          ))}
+
+          {editable && (
+            <form action={addAcademicYearAction} className="flex flex-wrap items-end gap-2 border-t border-border pt-4">
+              <div className="space-y-1">
+                <Label className="text-xs" htmlFor="new-name">{t("add_year")}</Label>
+                <Input id="new-name" name="name" placeholder={`${thisYear} / ${thisYear + 1}`} defaultValue={`${thisYear} / ${thisYear + 1}`} className="h-8 w-36" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs" htmlFor="new-start">Starts</Label>
+                <Input id="new-start" name="startDate" type="date" defaultValue={`${thisYear}-09-01`} className="h-8 w-40" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs" htmlFor="new-end">Ends</Label>
+                <Input id="new-end" name="endDate" type="date" defaultValue={`${thisYear + 1}-06-30`} className="h-8 w-40" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs" htmlFor="new-terms">Terms</Label>
+                <Input id="new-terms" name="termCount" type="number" min={1} max={4} defaultValue={2} className="h-8 w-16" />
+              </div>
+              <label className="flex items-center gap-1.5 pb-1.5 text-xs">
+                <input type="checkbox" name="makeCurrent" className="h-3.5 w-3.5" /> {t("make_current")}
               </label>
-              <Button type="submit">{t("add_year")}</Button>
+              <Button type="submit" size="sm" className="h-8">{t("add_year")}</Button>
             </form>
           )}
         </CardContent>

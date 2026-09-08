@@ -126,7 +126,11 @@ export async function GET(req: Request) {
       role: "OWNER",
       title: "Principal",
     });
-    await provisionSchool(school.id, startYear);
+    await provisionSchool(school.id, {
+      name: `${startYear} / ${startYear + 1}`,
+      startDate: `${startYear}-09-01`,
+      endDate: `${startYear + 1}-06-30`,
+    });
   }
 
   const year = await db.query.academicYears.findFirst({

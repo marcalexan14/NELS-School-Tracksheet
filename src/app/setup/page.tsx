@@ -2,15 +2,13 @@ import { redirect } from "next/navigation";
 import { GraduationCap } from "lucide-react";
 import { getSchool } from "@/lib/session";
 import { setupAction } from "@/app/actions/auth";
+import { SetupYearFields } from "@/components/setup-year-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default async function SetupPage() {
   if (await getSchool()) redirect("/login");
-
-  const thisYear = new Date().getFullYear();
-  const startYear = new Date().getMonth() >= 6 ? thisYear : thisYear - 1;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-6">
@@ -34,15 +32,17 @@ export default async function SetupPage() {
               <Label htmlFor="schoolName">School name</Label>
               <Input id="schoolName" name="schoolName" required placeholder="New Egyptian Language School" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="shortName">Short code</Label>
               <Input id="shortName" name="shortName" placeholder="NELS" maxLength={6} />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="startYear">First academic year starts</Label>
-              <Input id="startYear" name="startYear" type="number" defaultValue={startYear} min={2000} max={2100} />
-            </div>
           </div>
+
+          <SetupYearFields />
+          <p className="text-xs text-muted-foreground">
+            Pick the year and adjust the dates if your calendar isn&apos;t September&ndash;June. You
+            can add more years and edit these later in Settings.
+          </p>
 
           <div className="h-px bg-border" />
 
