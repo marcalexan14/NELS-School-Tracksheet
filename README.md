@@ -120,12 +120,13 @@ spread of payments. Log in with **`admin@nels.test`** / **`password123`**.
 
 ## Deploying
 
-1. Provision a PostgreSQL database and set `DATABASE_URL`.
-2. Set a strong `AUTH_SECRET`.
-3. `npm run build` then `npm start` (or deploy to Vercel — it's a standard
-   Next.js app; add the two environment variables in the project settings).
-4. `npm run db:push` against the production database once.
-5. Visit `/setup` to create the school and owner.
+**[DEPLOY.md](DEPLOY.md)** has the full 5-minute path (Neon + Vercel). In short:
+
+1. Create a Postgres database (Neon, Supabase, RDS…) and get its connection string.
+2. `DATABASE_URL=<string> npm run db:push` — once, to create the tables.
+3. Import the repo to Vercel; set `DATABASE_URL`, `AUTH_SECRET`, and
+   `AUTH_TRUST_HOST=true`; deploy.
+4. Open the deployment URL and complete `/setup`.
 
 Document uploads currently expect local disk; wire an object store
 (`src/app/dashboard/students/[id]` documents tab) before relying on them in
