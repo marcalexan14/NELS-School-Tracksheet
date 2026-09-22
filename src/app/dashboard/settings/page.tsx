@@ -12,6 +12,7 @@ import {
   addStaffAction,
   updateStaffRoleAction,
   removeStaffAction,
+  resetStaffPasswordAction,
 } from "@/app/actions/settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -246,7 +247,19 @@ export default async function SettingsPage() {
             <TableBody>
               {team.map((m) => (
                 <TableRow key={m.id}>
-                  <TableCell className="font-medium">{m.user.name ?? "—"}{m.title ? ` · ${m.title}` : ""}</TableCell>
+                  <TableCell className="font-medium">
+                    {m.user.name ?? "—"}{m.title ? ` · ${m.title}` : ""}
+                    {editable && (
+                      <details className="mt-1">
+                        <summary className="cursor-pointer text-xs text-muted-foreground">{t("reset_password")}</summary>
+                        <form action={resetStaffPasswordAction} className="mt-1.5 flex items-center gap-2">
+                          <input type="hidden" name="staffId" value={m.id} />
+                          <Input name="password" type="text" minLength={8} required placeholder={t("new_password")} className="h-7 w-40 text-xs" />
+                          <Button type="submit" variant="ghost" size="sm" className="h-7">{t("save")}</Button>
+                        </form>
+                      </details>
+                    )}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{m.user.email}</TableCell>
                   <TableCell>
                     {m.role === "OWNER" || !editable ? (

@@ -211,6 +211,30 @@ export async function addStaffAction(formData: FormData) {
   revalidatePath("/dashboard/settings");
 }
 
+// Admin-issued password reset — there's no email infrastructure here, so this
+// is the recovery path when someone forgets theirs: an admin sets a new
+// temporary password and hands it over directly.
+export async function resetStaffPasswordAction(formData: FormData) {
+  const ctx = await requireCan("settings");
+  const staffId = String(formData.get("staffId") ?? "");
+  const password = String(formData.get("password") ?? "");
+
+  if (password.length < 8) throw new Error("The new password must be at least 8 characters.");
+
+  const member = await db.query.staff.findFirst({
+    where: and(eq(staff.id, staffId), eq(staff.schoolId, ctx.schoolId)),
+  });
+  if (!member) throw new Error("Unknown staff member.");
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await db
+    .update(users)
+    .set({ passwordHash, failedLoginAttempts: 0, lockedUntil: null })
+    .where(eq(users.id, member.userId));
+
+  revalidatePath("/dashboard/settings");
+}
+
 export async function updateStaffRoleAction(formData: FormData) {
   const ctx = await requireCan("settings");
   const staffId = String(formData.get("staffId") ?? "");
