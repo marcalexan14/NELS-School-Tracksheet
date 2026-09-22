@@ -2,10 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GraduationCap, BookOpenCheck, Wallet, Users } from "lucide-react";
 import { getSchool } from "@/lib/session";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { loginAction } from "@/app/actions/auth";
+import { LoginForm } from "@/components/login-form";
 
 const POINTS = [
   { icon: Users, text: "The full student register, KG1 to Thanaweya Amma" },
@@ -50,19 +47,7 @@ export default async function LoginPage() {
             <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
             <p className="text-sm text-muted-foreground">Staff access to {school.name}</p>
           </div>
-          <form action={loginAction} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" required autoComplete="email" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required autoComplete="current-password" />
-            </div>
-            <Button type="submit" className="w-full">
-              Sign in
-            </Button>
-          </form>
+          <LoginForm />
           <p className="text-center text-xs text-muted-foreground">
             Accounts are created by an administrator in{" "}
             <Link href="/dashboard/settings" className="underline underline-offset-4">

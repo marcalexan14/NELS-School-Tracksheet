@@ -19,14 +19,15 @@ export async function nextReceiptNumber(schoolId: string, yearStart: number): Pr
   return `${prefix}${String(seq).padStart(6, "0")}`;
 }
 
-function recomputeFeeStatus(netPiastres: number, paidPiastres: number, dueDate: string): string {
-  if (paidPiastres >= netPiastres && netPiastres > 0) return "PAID";
+export function recomputeFeeStatus(netPiastres: number, paidPiastres: number, dueDate: string): string {
+  if (netPiastres === 0) return "WAIVED";
+  if (paidPiastres >= netPiastres) return "PAID";
   if (paidPiastres > 0) return "PARTIAL";
   if (new Date(dueDate) < new Date()) return "OVERDUE";
   return "PENDING";
 }
 
-function recomputeInstallmentStatus(amountPiastres: number, paidPiastres: number, dueDate: string): string {
+export function recomputeInstallmentStatus(amountPiastres: number, paidPiastres: number, dueDate: string): string {
   if (paidPiastres >= amountPiastres && amountPiastres > 0) return "PAID";
   if (paidPiastres > 0) return "PARTIAL";
   if (new Date(dueDate) < new Date()) return "OVERDUE";
@@ -175,9 +176,74 @@ export async function listPayments(schoolId: string, academicYearId: string | nu
     with: {
       student: true,
       receivedBy: { with: { user: true } },
+      voidedBy: { with: { user: true } },
       allocations: { with: { studentFee: { with: { feeItem: true } } } },
     },
   });
+}
+
+export type VoidPaymentResult = { ok: boolean; error?: string };
+
+// Reverses a payment: undoes its effect on every instalment/fee it touched and
+// removes its allocations, but keeps the payment row (marked voided, with a
+// reason) so the receipt number and history stay on the books.
+export async function voidPayment(
+  paymentId: string,
+  schoolId: string,
+  voidedByStaffId: string,
+  reason: string,
+): Promise<VoidPaymentResult> {
+  const payment = await db.query.payments.findFirst({
+    where: and(eq(payments.id, paymentId), eq(payments.schoolId, schoolId)),
+    with: {
+      allocations: { with: { installment: true, studentFee: true } },
+    },
+  });
+  if (!payment) return { ok: false, error: "Unknown payment." };
+  if (payment.voidedAt) return { ok: false, error: "This payment is already voided." };
+
+  // Reverse each touched instalment.
+  for (const alloc of payment.allocations) {
+    if (!alloc.installment) continue;
+    const newPaid = Math.max(0, toPiastres(alloc.installment.paidAmount) - toPiastres(alloc.amount));
+    await db
+      .update(installments)
+      .set({
+        paidAmount: fromPiastres(newPaid),
+        status: recomputeInstallmentStatus(
+          toPiastres(alloc.installment.amount),
+          newPaid,
+          alloc.installment.dueDate,
+        ) as typeof alloc.installment.status,
+      })
+      .where(eq(installments.id, alloc.installment.id));
+  }
+
+  // Recompute each touched fee from what remains once this payment's
+  // allocations are gone (other payments' allocations are untouched).
+  const feeIds = [...new Set(payment.allocations.map((a) => a.studentFeeId))];
+  for (const feeId of feeIds) {
+    const fee = payment.allocations.find((a) => a.studentFeeId === feeId)!.studentFee;
+    const otherAllocations = await db.query.paymentAllocations.findMany({
+      where: eq(paymentAllocations.studentFeeId, feeId),
+    });
+    const stillPaid = otherAllocations
+      .filter((a) => a.paymentId !== paymentId)
+      .reduce((s, a) => s + toPiastres(a.amount), 0);
+    await db
+      .update(studentFees)
+      .set({ status: recomputeFeeStatus(toPiastres(fee.netAmount), stillPaid, fee.dueDate) as typeof fee.status })
+      .where(eq(studentFees.id, feeId));
+  }
+
+  await db.delete(paymentAllocations).where(eq(paymentAllocations.paymentId, paymentId));
+
+  await db
+    .update(payments)
+    .set({ voidedAt: new Date(), voidedByStaffId, voidReason: reason || null })
+    .where(eq(payments.id, paymentId));
+
+  return { ok: true };
 }
 
 export async function getPayment(paymentId: string) {
@@ -188,6 +254,7 @@ export async function getPayment(paymentId: string) {
       school: true,
       academicYear: true,
       receivedBy: { with: { user: true } },
+      voidedBy: { with: { user: true } },
       allocations: {
         with: {
           studentFee: { with: { feeItem: true } },

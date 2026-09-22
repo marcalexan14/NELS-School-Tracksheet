@@ -215,7 +215,8 @@ export async function GET(req: Request) {
         .values({
           schoolId: school.id,
           code: `NELS-${startYear}-${String(code++).padStart(4, "0")}`,
-          nationalId: `3${birthYear.toString().slice(2)}${String(randInt(1, 12)).padStart(2, "0")}${String(randInt(1, 28)).padStart(2, "0")}${String(randInt(10000, 99999)).padStart(5, "0")}`.slice(0, 14),
+          // 14-digit Egyptian national ID: century(1) yy(2) mm(2) dd(2) governorate(2) sequence(4) check(1).
+          nationalId: `3${birthYear.toString().slice(2)}${String(randInt(1, 12)).padStart(2, "0")}${String(randInt(1, 28)).padStart(2, "0")}${String(randInt(1, 29)).padStart(2, "0")}${String(randInt(1, 9999)).padStart(4, "0")}${randInt(0, 9)}`,
           firstName: first,
           secondName: father,
           thirdName: grandfather,

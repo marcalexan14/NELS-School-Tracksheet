@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { academicYears, students } from "@/db/schema";
+import { academicYears, payments, students } from "@/db/schema";
 import { requireCan } from "@/lib/session";
-import { recordPayment } from "@/lib/payments";
+import { recordPayment, voidPayment } from "@/lib/payments";
 
 export async function recordPaymentAction(formData: FormData) {
   const ctx = await requireCan("payments");
@@ -53,4 +53,29 @@ export async function recordPaymentAction(formData: FormData) {
   revalidatePath("/dashboard/students");
   revalidatePath(`/dashboard/students/${studentId}`);
   redirect(`/dashboard/payments/${payment.id}`);
+}
+
+export type VoidState = { done: boolean; error?: string };
+
+// Reverses a payment's effect on the student's fees and instalments. The
+// receipt itself is kept, marked voided, for the audit trail.
+export async function voidPaymentAction(_prev: VoidState, formData: FormData): Promise<VoidState> {
+  const ctx = await requireCan("payments");
+  const paymentId = String(formData.get("paymentId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim();
+
+  if (!reason) return { done: false, error: "Give a reason — it stays on the record." };
+
+  const existing = await db.query.payments.findFirst({ where: eq(payments.id, paymentId) });
+  const studentId = existing?.studentId;
+
+  const result = await voidPayment(paymentId, ctx.schoolId, ctx.staffId, reason);
+  if (!result.ok) return { done: false, error: result.error };
+
+  revalidatePath("/dashboard/payments");
+  revalidatePath(`/dashboard/payments/${paymentId}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/students");
+  if (studentId) revalidatePath(`/dashboard/students/${studentId}`);
+  return { done: true };
 }

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { requireStaff } from "@/lib/session";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { requireStaff, can } from "@/lib/session";
 import { getPayment } from "@/lib/payments";
 import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
 import { formatEgpExact } from "@/lib/money";
 import { fullName } from "@/lib/students";
 import { PrintButton } from "@/components/print-button";
+import { VoidPaymentPanel } from "@/components/payments/void-payment-panel";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default async function ReceiptPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +21,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
   const allocated = payment.allocations.reduce((s, a) => s + Number(a.amount), 0);
   const unallocated = Number(payment.amount) - allocated;
+  const voided = !!payment.voidedAt;
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -27,10 +29,36 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         <Link href="/dashboard/payments" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> {t("nav_payments")}
         </Link>
-        <PrintButton label={t("print_receipt")} />
+        <div className="flex items-center gap-2">
+          {!voided && can(ctx.role, "payments") && (
+            <VoidPaymentPanel
+              paymentId={payment.id}
+              labels={{
+                open: t("void_payment"),
+                reason: t("void_reason"),
+                reasonHint: t("void_reason_hint"),
+                confirm: t("void_confirm"),
+                cancel: t("cancel"),
+              }}
+            />
+          )}
+          <PrintButton label={t("print_receipt")} />
+        </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-8">
+      {voided && (
+        <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive no-print">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-medium">
+              {t("void_banner")} {payment.voidedBy?.user?.name ? `— ${payment.voidedBy.user.name}` : ""}
+            </p>
+            {payment.voidReason && <p className="text-destructive/80">{payment.voidReason}</p>}
+          </div>
+        </div>
+      )}
+
+      <div className={`rounded-xl border border-border bg-card p-8 ${voided ? "opacity-60" : ""}`}>
         <div className="flex items-start justify-between border-b border-border pb-4">
           <div>
             <p className="text-lg font-semibold font-ar">{payment.school.name}</p>
@@ -41,6 +69,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           <div className="text-right">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">{t("receipt_no")}</p>
             <p className="font-mono text-sm font-medium">{payment.receiptNumber}</p>
+            {voided && <p className="text-xs font-semibold uppercase text-destructive">{t("voided_label")}</p>}
           </div>
         </div>
 
@@ -80,7 +109,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
                 <TableCell className="text-right tabular-nums">{formatEgpExact(a.amount)}</TableCell>
               </TableRow>
             ))}
-            {unallocated > 0.005 && (
+            {!voided && unallocated > 0.005 && (
               <TableRow>
                 <TableCell className="text-amber-600">Unallocated (credit on account)</TableCell>
                 <TableCell className="text-right tabular-nums text-amber-600">{formatEgpExact(unallocated)}</TableCell>

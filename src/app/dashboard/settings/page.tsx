@@ -11,6 +11,7 @@ import {
   setCurrentYearAction,
   addStaffAction,
   updateStaffRoleAction,
+  removeStaffAction,
 } from "@/app/actions/settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -239,6 +240,7 @@ export default async function SettingsPage() {
                 <TableHead>{t("student_name")}</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>{t("role")}</TableHead>
+                <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -258,6 +260,16 @@ export default async function SettingsPage() {
                           ))}
                         </select>
                         <Button type="submit" variant="ghost" size="sm">{t("save")}</Button>
+                      </form>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-end">
+                    {editable && m.role !== "OWNER" && m.id !== ctx.staffId && (
+                      <form action={removeStaffAction}>
+                        <input type="hidden" name="staffId" value={m.id} />
+                        <Button type="submit" variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                          {t("remove_staff")}
+                        </Button>
                       </form>
                     )}
                   </TableCell>

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
+import { AuthError } from "next-auth";
 import { db } from "@/db";
 import { users, schools, staff } from "@/db/schema";
 import { signIn } from "@/auth";
@@ -62,8 +63,22 @@ export async function setupAction(formData: FormData) {
   await signIn("credentials", { email, password, redirectTo: "/dashboard" });
 }
 
-export async function loginAction(formData: FormData) {
-  const email = String(formData.get("email") ?? "");
+export type LoginState = { error?: string };
+
+export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  await signIn("credentials", { email, password, redirectTo: "/dashboard" });
+  if (!email || !password) return { error: "Enter your email and password." };
+
+  try {
+    await signIn("credentials", { email, password, redirectTo: "/dashboard" });
+  } catch (err) {
+    if (err instanceof AuthError) {
+      // Deliberately vague: don't reveal whether the account exists, the
+      // password was wrong, or the account is locked out.
+      return { error: "Incorrect email or password, or this account is temporarily locked." };
+    }
+    throw err; // the successful sign-in's own redirect must propagate
+  }
+  return {};
 }

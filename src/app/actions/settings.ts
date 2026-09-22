@@ -227,3 +227,20 @@ export async function updateStaffRoleAction(formData: FormData) {
   await db.update(staff).set({ role: role as "ADMIN" }).where(eq(staff.id, staffId));
   revalidatePath("/dashboard/settings");
 }
+
+// Removes someone's access. Payments they recorded, discounts they approved,
+// etc. are untouched — the "received/approved by" field just clears.
+export async function removeStaffAction(formData: FormData) {
+  const ctx = await requireCan("settings");
+  const staffId = String(formData.get("staffId") ?? "");
+
+  const member = await db.query.staff.findFirst({
+    where: and(eq(staff.id, staffId), eq(staff.schoolId, ctx.schoolId)),
+  });
+  if (!member) throw new Error("Unknown staff member.");
+  if (member.role === "OWNER") throw new Error("The owner can't be removed.");
+  if (member.id === ctx.staffId) throw new Error("You can't remove your own access.");
+
+  await db.delete(staff).where(eq(staff.id, staffId));
+  revalidatePath("/dashboard/settings");
+}

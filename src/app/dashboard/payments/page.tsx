@@ -23,7 +23,7 @@ export default async function PaymentsPage({
   const { active } = await resolveYear(ctx.schoolId, sp.year);
 
   const rows = await listPayments(ctx.schoolId, active?.id ?? null, 200);
-  const total = rows.reduce((s, p) => s + Number(p.amount), 0);
+  const total = rows.reduce((s, p) => s + (p.voidedAt ? 0 : Number(p.amount)), 0);
 
   return (
     <div className="space-y-6">
@@ -60,16 +60,19 @@ export default async function PaymentsPage({
               )}
               {rows.map((p) => {
                 const items = [...new Set(p.allocations.map((a) => a.studentFee.feeItem.name))].join(", ");
+                const voided = !!p.voidedAt;
                 return (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id} className={voided ? "opacity-50" : ""}>
                     <TableCell className="font-mono text-xs">
                       <Link href={`/dashboard/payments/${p.id}`} className="hover:underline">{p.receiptNumber}</Link>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{p.paidOn}</TableCell>
                     <TableCell className="font-ar">{fullName(p.student)}</TableCell>
-                    <TableCell className="text-muted-foreground">{items || <span className="text-amber-600">unallocated</span>}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {voided ? <Badge variant="destructive">{t("voided_label")}</Badge> : items || <span className="text-amber-600">unallocated</span>}
+                    </TableCell>
                     <TableCell><Badge variant="secondary">{enumLabel(locale, p.method)}</Badge></TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">{formatEgpExact(p.amount)}</TableCell>
+                    <TableCell className={`text-right font-medium tabular-nums ${voided ? "line-through" : ""}`}>{formatEgpExact(p.amount)}</TableCell>
                   </TableRow>
                 );
               })}

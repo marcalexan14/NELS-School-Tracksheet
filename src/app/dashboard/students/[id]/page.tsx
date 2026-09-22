@@ -9,6 +9,9 @@ import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
 import { formatEgpExact } from "@/lib/money";
 import { addGuardianAction } from "@/app/actions/students";
 import { StudentFeesTable } from "@/components/students/student-fees-table";
+import { EditStudentPanel } from "@/components/students/edit-student-panel";
+import { GuardianCard } from "@/components/students/guardian-card";
+import { DiscountsPanel } from "@/components/students/discounts-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +26,38 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
       <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 text-sm">{value || "—"}</dd>
     </div>
+  );
+}
+
+function OverviewFields({
+  student,
+  locale,
+  t,
+}: {
+  student: {
+    latinName: string | null;
+    nationalId: string | null;
+    dateOfBirth: string;
+    gender: string;
+    religion: string | null;
+    nationality: string;
+    birthGovernorate: string | null;
+    address: string | null;
+  };
+  locale: Locale;
+  t: ReturnType<typeof getTranslator>;
+}) {
+  return (
+    <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
+      <Field label={t("latin_name").split(" (")[0]} value={student.latinName} />
+      <Field label={t("national_id")} value={<span dir="ltr">{student.nationalId}</span>} />
+      <Field label={t("date_of_birth")} value={student.dateOfBirth} />
+      <Field label={t("gender")} value={enumLabel(locale, student.gender)} />
+      <Field label={t("religion")} value={enumLabel(locale, student.religion)} />
+      <Field label={t("nationality")} value={student.nationality} />
+      <Field label={t("birth_governorate")} value={student.birthGovernorate} />
+      <Field label={t("address")} value={<span className="font-ar">{student.address}</span>} />
+    </dl>
   );
 }
 
@@ -91,29 +126,61 @@ export default async function StudentProfilePage({
         <TabsContent value="overview" className="mt-4">
           <Card>
             <CardContent className="p-6">
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
-                <Field label={t("latin_name").split(" (")[0]} value={student.latinName} />
-                <Field label={t("national_id")} value={<span dir="ltr">{student.nationalId}</span>} />
-                <Field label={t("date_of_birth")} value={student.dateOfBirth} />
-                <Field label={t("gender")} value={enumLabel(locale, student.gender)} />
-                <Field label={t("religion")} value={enumLabel(locale, student.religion)} />
-                <Field label={t("nationality")} value={student.nationality} />
-                <Field label={t("birth_governorate")} value={student.birthGovernorate} />
-                <Field label={t("address")} value={<span className="font-ar">{student.address}</span>} />
-              </dl>
-              {student.discounts.length > 0 && (
-                <div className="mt-6 border-t border-border pt-4">
-                  <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">{t("discount")}</p>
-                  <ul className="space-y-1 text-sm">
-                    {student.discounts.map((d) => (
-                      <li key={d.id}>
-                        {enumLabel(locale, d.kind)} — {d.basis === "PERCENT" ? `${d.value}%` : formatEgpExact(d.value)}
-                        {d.appliesToCategory ? ` (${enumLabel(locale, d.appliesToCategory)})` : ""} · {d.academicYear.name}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              {can(ctx.role, "students") ? (
+                <EditStudentPanel
+                  student={student}
+                  labels={{
+                    edit: t("edit_student"),
+                    cancel: t("cancel"),
+                    save: t("save"),
+                    firstName: t("first_name"),
+                    secondName: t("second_name"),
+                    thirdName: t("third_name"),
+                    familyName: t("family_name"),
+                    latinName: t("latin_name").split(" (")[0],
+                    nationalId: t("national_id"),
+                    gender: t("gender"),
+                    dateOfBirth: t("date_of_birth"),
+                    religion: t("religion"),
+                    nationality: t("nationality"),
+                    birthGovernorate: t("birth_governorate"),
+                    address: t("address"),
+                    male: enumLabel(locale, "MALE"),
+                    female: enumLabel(locale, "FEMALE"),
+                    muslim: enumLabel(locale, "MUSLIM"),
+                    christian: enumLabel(locale, "CHRISTIAN"),
+                    other: enumLabel(locale, "OTHER"),
+                  }}
+                >
+                  <OverviewFields student={student} locale={locale} t={t} />
+                </EditStudentPanel>
+              ) : (
+                <OverviewFields student={student} locale={locale} t={t} />
               )}
+
+              <DiscountsPanel
+                studentId={student.id}
+                currentYearId={active?.id ?? null}
+                discounts={student.discounts.map((d) => ({
+                  id: d.id,
+                  kind: d.kind,
+                  basis: d.basis,
+                  value: d.value,
+                  appliesToCategory: d.appliesToCategory,
+                  academicYearName: d.academicYear.name,
+                }))}
+                locale={locale}
+                labels={{
+                  title: t("discount"),
+                  add: t("add_discount"),
+                  none: t("no_discounts"),
+                  remove: t("delete_guardian"),
+                  value: t("amount"),
+                  note: t("adjust_reason"),
+                  save: t("save"),
+                  cancel: t("cancel"),
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -121,24 +188,26 @@ export default async function StudentProfilePage({
         <TabsContent value="guardians" className="mt-4 space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {student.guardians.map((g) => (
-              <Card key={g.id}>
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium font-ar">{g.name}</p>
-                    <Badge variant="secondary">{enumLabel(locale, g.relation)}</Badge>
-                  </div>
-                  <dl className="mt-3 space-y-2">
-                    <Field label={t("phone")} value={<span dir="ltr">{g.phone}{g.altPhone ? ` · ${g.altPhone}` : ""}</span>} />
-                    <Field label="Email" value={<span dir="ltr">{g.email}</span>} />
-                    <Field label={t("occupation")} value={<span className="font-ar">{g.occupation}</span>} />
-                    <Field label={t("national_id")} value={<span dir="ltr">{g.nationalId}</span>} />
-                  </dl>
-                  <div className="mt-3 flex gap-2">
-                    {g.isPrimaryContact && <Badge>{t("primary_contact")}</Badge>}
-                    {g.isEmergencyContact && <Badge variant="outline">{t("emergency_contact")}</Badge>}
-                  </div>
-                </CardContent>
-              </Card>
+              <GuardianCard
+                key={g.id}
+                guardian={g}
+                locale={locale}
+                canEdit={can(ctx.role, "students")}
+                labels={{
+                  name: t("guardian_name"),
+                  relation: t("relation"),
+                  phone: t("phone"),
+                  altPhone: t("phone") + " 2",
+                  occupation: t("occupation"),
+                  nationalId: t("national_id"),
+                  primaryContact: t("primary_contact"),
+                  emergencyContact: t("emergency_contact"),
+                  edit: t("edit"),
+                  remove: t("delete_guardian"),
+                  save: t("save"),
+                  cancel: t("cancel"),
+                }}
+              />
             ))}
           </div>
 

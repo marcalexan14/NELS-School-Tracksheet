@@ -131,6 +131,10 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   emailVerified: timestamp("email_verified"),
   image: text("image"),
+  // Login lockout: counted on each failed attempt, reset on success. Locked
+  // accounts are rejected until lockedUntil passes, regardless of password.
+  failedLoginAttempts: integer("failed_login_attempts").notNull().default(0),
+  lockedUntil: timestamp("locked_until"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -560,6 +564,13 @@ export const payments = pgTable(
     receivedByStaffId: text("received_by_staff_id").references(() => staff.id, {
       onDelete: "set null",
     }),
+    // Voided payments are never deleted — the receipt number and amount stay on
+    // the record for the audit trail; their allocations are reversed instead.
+    voidedAt: timestamp("voided_at"),
+    voidedByStaffId: text("voided_by_staff_id").references(() => staff.id, {
+      onDelete: "set null",
+    }),
+    voidReason: text("void_reason"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [
@@ -757,7 +768,16 @@ export const paymentsRelations = relations(payments, ({ one, many }) => ({
     fields: [payments.academicYearId],
     references: [academicYears.id],
   }),
-  receivedBy: one(staff, { fields: [payments.receivedByStaffId], references: [staff.id] }),
+  receivedBy: one(staff, {
+    fields: [payments.receivedByStaffId],
+    references: [staff.id],
+    relationName: "payment_received_by",
+  }),
+  voidedBy: one(staff, {
+    fields: [payments.voidedByStaffId],
+    references: [staff.id],
+    relationName: "payment_voided_by",
+  }),
   allocations: many(paymentAllocations),
 }));
 
