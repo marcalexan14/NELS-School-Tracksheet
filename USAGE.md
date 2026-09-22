@@ -260,6 +260,26 @@ IDs kept at the end so the file can be re-imported if you ever need to restore.
 
 ---
 
+## Fixing mistakes
+
+- **Wrong student record** — on their profile's **Overview** tab, click **Edit
+  student** to correct any field (name, national ID, date of birth, religion,
+  address…). A national ID already on file for someone else is rejected.
+- **Wrong or outdated guardian info** — on the **Guardians** tab, **Edit** or
+  **Remove** any guardian. A student always keeps at least one — removing the
+  last one is blocked, and removing the primary contact hands that flag to
+  whoever's left.
+- **Wrong payment** — open the receipt and click **Void payment** (a reason is
+  required and stays on the record). This undoes its effect on the student's
+  instalments/fees and drops out of every total, but the receipt itself stays
+  on file, marked *Voided*, for the audit trail. Nothing is ever hard-deleted.
+- **Staff who shouldn't have access anymore** — **Settings → Staff → Remove**.
+  Their name stays on anything they did (payments recorded, discounts
+  approved); only their login access goes away. The owner can't be removed,
+  and you can't remove your own access.
+
+---
+
 ## Tips
 
 - **The year picker is everything.** If a screen looks empty, check you're on
@@ -271,3 +291,5 @@ IDs kept at the end so the file can be re-imported if you ever need to restore.
   automatically once a bill exists.
 - **Balances shown in red** in the student register mean money is owed for the
   selected year.
+- **5 wrong passwords locks an account for 15 minutes** — a safety measure
+  against guessing. It clears itself; there's no need to unlock it manually.
