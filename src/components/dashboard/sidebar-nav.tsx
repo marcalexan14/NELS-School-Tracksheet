@@ -11,6 +11,7 @@ import {
   ReceiptText,
   Wallet,
   BarChart3,
+  Banknote,
   DatabaseBackup,
   Settings,
 } from "lucide-react";
@@ -28,6 +29,7 @@ const ICONS: Record<Page, typeof LayoutDashboard> = {
   fees: ReceiptText,
   payments: Wallet,
   reports: BarChart3,
+  salaries: Banknote,
   export: DatabaseBackup,
   settings: Settings,
 };

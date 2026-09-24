@@ -12,6 +12,7 @@ export type Page =
   | "fees"
   | "payments"
   | "reports"
+  | "salaries"
   | "export"
   | "settings";
 
@@ -27,19 +28,21 @@ const VIEW_ROLES: Record<Page, Role[]> = {
   fees: ["OWNER", "ADMIN", "ACCOUNTANT"],
   payments: ["OWNER", "ADMIN", "ACCOUNTANT"],
   reports: ["OWNER", "ADMIN", "VIEWER"],
+  salaries: ["OWNER", "ADMIN"],
   export: ["OWNER", "ADMIN"],
   settings: ["OWNER", "ADMIN"],
 };
 
 // Who can change data, as opposed to merely see the page (e.g. every role
 // that can view Students can search it; only these can add/edit one).
-export type WriteArea = "students" | "enrollments" | "fees" | "payments" | "settings";
+export type WriteArea = "students" | "enrollments" | "fees" | "payments" | "salaries" | "settings";
 
 const WRITE_ROLES: Record<WriteArea, Role[]> = {
   students: ["OWNER", "ADMIN", "REGISTRAR"],
   enrollments: ["OWNER", "ADMIN", "REGISTRAR"],
   fees: ["OWNER", "ADMIN", "ACCOUNTANT"],
   payments: ["OWNER", "ADMIN", "ACCOUNTANT"],
+  salaries: ["OWNER", "ADMIN"],
   settings: ["OWNER", "ADMIN"],
 };
 
@@ -76,6 +79,7 @@ export const NAV_ITEMS = [
   { href: "/dashboard/fees", page: "fees", key: "nav_fees", section: "section_finance" },
   { href: "/dashboard/payments", page: "payments", key: "nav_payments", section: null },
   { href: "/dashboard/reports", page: "reports", key: "nav_reports", section: null },
+  { href: "/dashboard/salaries", page: "salaries", key: "nav_salaries", section: null },
   { href: "/dashboard/export", page: "export", key: "nav_export", section: null },
   { href: "/dashboard/settings", page: "settings", key: "nav_settings", section: null },
 ] as const satisfies readonly { href: string; page: Page; key: string; section: string | null }[];

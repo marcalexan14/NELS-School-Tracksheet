@@ -201,9 +201,33 @@ export const staff = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     role: roleEnum("role").notNull().default("VIEWER"),
     title: text("title"),
+    // Monthly base salary in EGP. Owner/Admin only — see salaryAdjustments for
+    // its change history (every edit and every % increase logs a row there).
+    baseSalary: numeric("base_salary", { precision: 12, scale: 2 }),
+    pinHash: text("pin_hash"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [uniqueIndex("staff_school_user_idx").on(t.schoolId, t.userId)],
+);
+
+export const salaryAdjustments = pgTable(
+  "salary_adjustments",
+  {
+    id: id(),
+    schoolId: text("school_id")
+      .notNull()
+      .references(() => schools.id, { onDelete: "cascade" }),
+    staffId: text("staff_id")
+      .notNull()
+      .references(() => staff.id, { onDelete: "cascade" }),
+    previousAmount: numeric("previous_amount", { precision: 12, scale: 2 }),
+    newAmount: numeric("new_amount", { precision: 12, scale: 2 }).notNull(),
+    percent: numeric("percent", { precision: 6, scale: 2 }),
+    note: text("note"),
+    changedByStaffId: text("changed_by_staff_id").references(() => staff.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("salary_adjustments_staff_idx").on(t.staffId)],
 );
 
 // ---------- Academic calendar ----------
@@ -620,9 +644,15 @@ export const schoolsRelations = relations(schools, ({ many }) => ({
   payments: many(payments),
 }));
 
-export const staffRelations = relations(staff, ({ one }) => ({
+export const staffRelations = relations(staff, ({ one, many }) => ({
   school: one(schools, { fields: [staff.schoolId], references: [schools.id] }),
   user: one(users, { fields: [staff.userId], references: [users.id] }),
+  salaryAdjustments: many(salaryAdjustments),
+}));
+
+export const salaryAdjustmentsRelations = relations(salaryAdjustments, ({ one }) => ({
+  staff: one(staff, { fields: [salaryAdjustments.staffId], references: [staff.id] }),
+  changedBy: one(staff, { fields: [salaryAdjustments.changedByStaffId], references: [staff.id] }),
 }));
 
 export const academicYearsRelations = relations(academicYears, ({ one, many }) => ({
