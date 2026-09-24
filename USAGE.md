@@ -22,7 +22,25 @@ home screen after signing in instead of the main Dashboard.
 | **Teacher** | Students (read only) | — | Students |
 | **Viewer** | Dashboard, Students, Reports (read only) | — | Dashboard |
 
-Reports, Export, and Settings & staff are Owner/Admin only.
+Reports, Salaries, Export, and Settings & staff are Owner/Admin only.
+
+### Look at another role's view
+
+Owner/Admin have a **"Look like…"** picker in the header, next to the academic
+year. Pick Registrar, Accountant, Teacher, or Viewer and the app switches to
+exactly what that role would see — sidebar, pages, and what can be saved — with
+an amber banner on every screen and an **Exit preview** button to go back. This
+is the fastest way to check what you've actually given someone access to,
+without logging in as a second account.
+
+### Quick PIN sign-in (works with no internet)
+
+For a shared front-desk or accounts-office computer, set a short PIN per staff
+member in **Settings → Staff → Set quick sign-in PIN**. At `/login`, that
+person taps their name and types the PIN instead of an email and password —
+faster, and checked entirely against the local database, so it works even if
+the computer has no internet connection. The same 5-attempts lockout as email
+sign-in applies.
 
 ---
 
@@ -250,9 +268,23 @@ New siblings and transfers: register them in Admissions and enrol them normally.
 
 ---
 
-## 9. Backups
+## 9. Salaries (Owner / Admin only)
 
-**Export & backup** (Owner / Admin / Accountant). Pick **All data** or one
+One grid, one row per staff member. Click any amount to edit it directly —
+no separate edit form, just like a spreadsheet cell; Enter or clicking away
+saves it.
+
+- **Increase all by %** — type a number (10 for +10%, -5 for a 5% cut) and
+  apply it to every staff member who already has a salary set. Each change is
+  logged with the old and new amount, so there's a paper trail for every raise.
+- **Import from Excel** — download the template (already has every staff
+  member's email and name filled in), fill in the salary column, and upload
+  it back. Rows are matched by email first, then by name; unmatched rows are
+  listed so you can fix and re-upload just those.
+
+## 10. Backups
+
+**Export & backup** (Owner / Admin only). Pick **All data** or one
 academic year and click **Download .xlsx**. You get one workbook with a sheet
 per table — students, guardians, enrolments, charges, instalments, payments,
 allocations, discounts, fee plans, the calendar, staff, and a `_Backup info`
