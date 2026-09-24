@@ -8,16 +8,21 @@ year everything you see and enter belongs to.
 
 ## Roles — who can do what
 
-| Role | Students & guardians | Enrolments | Fees & plans | Payments | Settings & staff |
-|---|:---:|:---:|:---:|:---:|:---:|
-| **Owner** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Admin** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Registrar** | ✅ | ✅ | — | — | — |
-| **Accountant** | — | — | ✅ | ✅ | — |
-| **Teacher** | read | read | read | read | read |
-| **Viewer** | read | read | read | read | read |
+Each role gets its own view: a limited, job-focused set of screens for
+day-to-day data entry, or the full set of dashboards for Owner/Admin. A role
+that can't open a screen never sees it in the sidebar, and lands on its own
+home screen after signing in instead of the main Dashboard.
 
-Everyone can open every screen; the table above is about *changing* things.
+| Role | Sees | Can change | Signs in to |
+|---|---|---|---|
+| **Owner** | everything | everything | Dashboard |
+| **Admin** | everything | everything | Dashboard |
+| **Registrar** | Students, Admissions, Enrolments | Students, Enrolments | Students |
+| **Accountant** | Students, Fees & plans, Payments | Fees & plans, Payments | Payments |
+| **Teacher** | Students (read only) | — | Students |
+| **Viewer** | Dashboard, Students, Reports (read only) | — | Dashboard |
+
+Reports, Export, and Settings & staff are Owner/Admin only.
 
 ---
 
