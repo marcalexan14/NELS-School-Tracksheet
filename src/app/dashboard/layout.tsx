@@ -2,11 +2,13 @@ import { redirect } from "next/navigation";
 import { GraduationCap } from "lucide-react";
 import { auth, signOut } from "@/auth";
 import { requireStaff } from "@/lib/session";
+import { stopPreviewAction } from "@/app/actions/preview";
 import { listYears } from "@/lib/academic";
 import { getTranslator, isRtl, enumLabel, type Locale } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
+import { PreviewSwitcher } from "@/components/dashboard/preview-switcher";
 import { YearSwitcher } from "@/components/dashboard/year-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -23,7 +25,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const initials = (session.user.name ?? session.user.email ?? "?").slice(0, 2).toUpperCase();
 
   return (
-    <div dir={rtl ? "rtl" : "ltr"} className="flex min-h-screen bg-muted/30">
+    <div dir={rtl ? "rtl" : "ltr"} className="flex min-h-screen flex-col bg-muted/30">
+      {ctx.previewing && (
+        <div className="flex items-center justify-center gap-3 bg-amber-500/90 px-4 py-1.5 text-xs font-medium text-amber-950">
+          <span>
+            Previewing as {enumLabel(locale, ctx.role)} — showing exactly what they&apos;d see (and only what they could save).
+          </span>
+          <form action={stopPreviewAction}>
+            <button type="submit" className="rounded-md bg-amber-950/10 px-2 py-0.5 underline underline-offset-2 hover:bg-amber-950/20">
+              Exit preview
+            </button>
+          </form>
+        </div>
+      )}
+      <div className="flex flex-1">
       <aside className="hidden w-64 shrink-0 flex-col border-border bg-sidebar sm:flex ltr:border-r rtl:border-l">
         <div className="flex h-16 items-center gap-2 border-b border-border px-6">
           <span
@@ -50,6 +65,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             {ctx.school.name}
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            {ctx.realRole === "OWNER" || ctx.realRole === "ADMIN" ? <PreviewSwitcher /> : null}
             <YearSwitcher years={years.map((y) => ({ id: y.id, name: y.name, isCurrent: y.isCurrent }))} label={t("academic_year")} />
             <ThemeToggle />
             <Avatar className="h-8 w-8 ring-2 ring-accent">
@@ -68,6 +84,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-6">{children}</main>
+      </div>
       </div>
     </div>
   );

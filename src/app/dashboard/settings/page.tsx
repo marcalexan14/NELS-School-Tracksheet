@@ -13,6 +13,8 @@ import {
   updateStaffRoleAction,
   removeStaffAction,
   resetStaffPasswordAction,
+  setStaffPinAction,
+  clearStaffPinAction,
 } from "@/app/actions/settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -257,6 +259,41 @@ export default async function SettingsPage() {
                           <Input name="password" type="text" minLength={8} required placeholder={t("new_password")} className="h-7 w-40 text-xs" />
                           <Button type="submit" variant="ghost" size="sm" className="h-7">{t("save")}</Button>
                         </form>
+                      </details>
+                    )}
+                    {editable && (
+                      <details className="mt-1">
+                        <summary className="cursor-pointer text-xs text-muted-foreground">
+                          {m.pinHash ? "Change quick sign-in PIN" : "Set quick sign-in PIN"}
+                        </summary>
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <form action={setStaffPinAction} className="flex items-center gap-2">
+                            <input type="hidden" name="staffId" value={m.id} />
+                            <Input
+                              name="pin"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="\d{4,6}"
+                              minLength={4}
+                              maxLength={6}
+                              required
+                              placeholder="4-6 digits"
+                              className="h-7 w-28 text-xs"
+                            />
+                            <Button type="submit" variant="ghost" size="sm" className="h-7">{t("save")}</Button>
+                          </form>
+                          {m.pinHash && (
+                            <form action={clearStaffPinAction}>
+                              <input type="hidden" name="staffId" value={m.id} />
+                              <Button type="submit" variant="ghost" size="sm" className="h-7 text-destructive hover:text-destructive">
+                                Clear
+                              </Button>
+                            </form>
+                          )}
+                        </div>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          Lets them tap their name and enter this PIN at login instead of typing their email — handy on a shared computer, and works with no internet.
+                        </p>
                       </details>
                     )}
                   </TableCell>

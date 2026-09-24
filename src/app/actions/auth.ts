@@ -82,3 +82,21 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   }
   return {};
 }
+
+export type PinLoginState = { error?: string };
+
+export async function pinLoginAction(_prev: PinLoginState, formData: FormData): Promise<PinLoginState> {
+  const staffId = String(formData.get("staffId") ?? "");
+  const pin = String(formData.get("pin") ?? "");
+  if (!staffId || !pin) return { error: "Choose your name and enter your PIN." };
+
+  try {
+    await signIn("staff-pin", { staffId, pin, redirectTo: "/dashboard" });
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return { error: "Wrong PIN, or this account is temporarily locked." };
+    }
+    throw err;
+  }
+  return {};
+}

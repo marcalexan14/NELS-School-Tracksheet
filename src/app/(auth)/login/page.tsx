@@ -1,8 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { isNotNull, eq, and } from "drizzle-orm";
 import { GraduationCap, BookOpenCheck, Wallet, Users } from "lucide-react";
 import { getSchool } from "@/lib/session";
+import { db } from "@/db";
+import { staff } from "@/db/schema";
+import { enumLabel } from "@/lib/i18n";
 import { LoginForm } from "@/components/login-form";
+import { QuickSignIn } from "@/components/quick-sign-in";
+
+// Quick sign-in reads the live staff/PIN list — never freeze this page at
+// build time, or a PIN set after deploy wouldn't show up until a rebuild.
+export const dynamic = "force-dynamic";
 
 const POINTS = [
   { icon: Users, text: "The full student register, KG1 to Thanaweya Amma" },
@@ -13,6 +22,13 @@ const POINTS = [
 export default async function LoginPage() {
   const school = await getSchool();
   if (!school) redirect("/setup");
+
+  const quickStaff = await db.query.staff.findMany({
+    where: and(eq(staff.schoolId, school.id), isNotNull(staff.pinHash)),
+    with: { user: { columns: { name: true, email: true } } },
+    orderBy: (s, { asc }) => asc(s.createdAt),
+  });
+  const locale = (school.locale as "en" | "ar") ?? "en";
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
@@ -47,6 +63,20 @@ export default async function LoginPage() {
             <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
             <p className="text-sm text-muted-foreground">Staff access to {school.name}</p>
           </div>
+          {quickStaff.length > 0 && (
+            <>
+              <QuickSignIn
+                staff={quickStaff.map((s) => ({
+                  id: s.id,
+                  name: s.user.name ?? s.user.email,
+                  role: enumLabel(locale, s.role),
+                }))}
+              />
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="h-px flex-1 bg-border" /> or sign in with email <span className="h-px flex-1 bg-border" />
+              </div>
+            </>
+          )}
           <LoginForm />
           <p className="text-center text-xs text-muted-foreground">
             Accounts are created by an administrator in{" "}

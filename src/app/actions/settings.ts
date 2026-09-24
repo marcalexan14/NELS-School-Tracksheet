@@ -235,6 +235,40 @@ export async function resetStaffPasswordAction(formData: FormData) {
   revalidatePath("/dashboard/settings");
 }
 
+// A short PIN for quick, offline-friendly sign-in on a shared school
+// computer — see the login page's "Quick sign-in" panel. Tied to one staff
+// member (for the audit trail), just faster to type than an email+password
+// on a front-desk machine everyone shares.
+export async function setStaffPinAction(formData: FormData) {
+  const ctx = await requireCan("settings");
+  const staffId = String(formData.get("staffId") ?? "");
+  const pin = String(formData.get("pin") ?? "");
+
+  if (!/^\d{4,6}$/.test(pin)) throw new Error("PIN must be 4-6 digits.");
+
+  const member = await db.query.staff.findFirst({
+    where: and(eq(staff.id, staffId), eq(staff.schoolId, ctx.schoolId)),
+  });
+  if (!member) throw new Error("Unknown staff member.");
+
+  const pinHash = await bcrypt.hash(pin, 10);
+  await db.update(staff).set({ pinHash }).where(eq(staff.id, staffId));
+  revalidatePath("/dashboard/settings");
+}
+
+export async function clearStaffPinAction(formData: FormData) {
+  const ctx = await requireCan("settings");
+  const staffId = String(formData.get("staffId") ?? "");
+
+  const member = await db.query.staff.findFirst({
+    where: and(eq(staff.id, staffId), eq(staff.schoolId, ctx.schoolId)),
+  });
+  if (!member) throw new Error("Unknown staff member.");
+
+  await db.update(staff).set({ pinHash: null }).where(eq(staff.id, staffId));
+  revalidatePath("/dashboard/settings");
+}
+
 export async function updateStaffRoleAction(formData: FormData) {
   const ctx = await requireCan("settings");
   const staffId = String(formData.get("staffId") ?? "");
