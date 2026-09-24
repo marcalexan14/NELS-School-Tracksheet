@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireStaff, can } from "@/lib/session";
+import { requireView, can } from "@/lib/session";
 import { getCurrentYear } from "@/lib/academic";
 import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
 import { db } from "@/db";
@@ -19,7 +19,7 @@ const EGYPT_GOVERNORATES = [
 ];
 
 export default async function AdmissionsPage() {
-  const ctx = await requireStaff();
+  const ctx = await requireView("admissions");
   if (!can(ctx.role, "students")) redirect("/dashboard/students");
 
   const locale = (ctx.school.locale as Locale) ?? "en";

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Wallet, TrendingUp, Percent, AlertTriangle } from "lucide-react";
-import { requireStaff } from "@/lib/session";
+import { requireView } from "@/lib/session";
 import { resolveYear } from "@/lib/academic";
 import { getDashboard } from "@/lib/reports";
 import { getTranslator, type Locale } from "@/lib/i18n";
@@ -19,7 +19,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ year?: string }>;
 }) {
-  const ctx = await requireStaff();
+  const ctx = await requireView("dashboard");
   const locale = (ctx.school.locale as Locale) ?? "en";
   const t = getTranslator(locale);
   const { year } = await searchParams;

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
-import { requireStaff, can } from "@/lib/session";
+import { requireView, can } from "@/lib/session";
 import { getPayment } from "@/lib/payments";
 import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
 import { formatEgpExact } from "@/lib/money";
@@ -11,7 +11,7 @@ import { VoidPaymentPanel } from "@/components/payments/void-payment-panel";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default async function ReceiptPage({ params }: { params: Promise<{ id: string }> }) {
-  const ctx = await requireStaff();
+  const ctx = await requireView("payments");
   const locale = (ctx.school.locale as Locale) ?? "en";
   const t = getTranslator(locale);
   const { id } = await params;

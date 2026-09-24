@@ -1,4 +1,4 @@
-import { requireStaff, can } from "@/lib/session";
+import { requireView, can } from "@/lib/session";
 import { db } from "@/db";
 import { staff, gradeLevels, stages, academicYears } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
@@ -24,7 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 const STAFF_ROLES = ["ADMIN", "REGISTRAR", "ACCOUNTANT", "TEACHER", "VIEWER"] as const;
 
 export default async function SettingsPage() {
-  const ctx = await requireStaff();
+  const ctx = await requireView("settings");
   const locale = (ctx.school.locale as Locale) ?? "en";
   const t = getTranslator(locale);
   const editable = can(ctx.role, "settings");

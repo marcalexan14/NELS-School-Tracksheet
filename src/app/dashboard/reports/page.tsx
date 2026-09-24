@@ -1,4 +1,4 @@
-import { requireStaff } from "@/lib/session";
+import { requireView } from "@/lib/session";
 import { resolveYear } from "@/lib/academic";
 import { getDashboard, getReportBreakdown } from "@/lib/reports";
 import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
@@ -12,7 +12,7 @@ export default async function ReportsPage({
 }: {
   searchParams: Promise<{ year?: string }>;
 }) {
-  const ctx = await requireStaff();
+  const ctx = await requireView("reports");
   const locale = (ctx.school.locale as Locale) ?? "en";
   const t = getTranslator(locale);
   const sp = await searchParams;

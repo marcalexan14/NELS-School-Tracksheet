@@ -1,4 +1,4 @@
-import { requireStaff, can } from "@/lib/session";
+import { requireView, can } from "@/lib/session";
 import { resolveYear, listYears } from "@/lib/academic";
 import { getTranslator, type Locale } from "@/lib/i18n";
 import { fullName } from "@/lib/students";
@@ -21,7 +21,7 @@ export default async function EnrollmentsPage({
 }: {
   searchParams: Promise<{ year?: string; focus?: string }>;
 }) {
-  const ctx = await requireStaff();
+  const ctx = await requireView("enrollments");
   const locale = (ctx.school.locale as Locale) ?? "en";
   const t = getTranslator(locale);
   const editable = can(ctx.role, "enrollments");

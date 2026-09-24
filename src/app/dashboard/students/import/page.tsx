@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { requireStaff, can } from "@/lib/session";
+import { requireView, can } from "@/lib/session";
 import { ImportClient } from "@/components/students/import-client";
 
 export default async function ImportStudentsPage() {
-  const ctx = await requireStaff();
+  const ctx = await requireView("students");
   if (!can(ctx.role, "students")) redirect("/dashboard/students");
 
   return (

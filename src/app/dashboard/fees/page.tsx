@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireStaff, can } from "@/lib/session";
+import { requireView, can } from "@/lib/session";
 import { resolveYear } from "@/lib/academic";
 import { feePlanForGrade } from "@/lib/fees";
 import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
@@ -24,7 +24,7 @@ export default async function FeesPage({
 }: {
   searchParams: Promise<{ year?: string; grade?: string }>;
 }) {
-  const ctx = await requireStaff();
+  const ctx = await requireView("fees");
   const locale = (ctx.school.locale as Locale) ?? "en";
   const t = getTranslator(locale);
   const editable = can(ctx.role, "fees");

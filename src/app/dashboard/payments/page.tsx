@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Wallet } from "lucide-react";
-import { requireStaff, can } from "@/lib/session";
+import { requireView, can } from "@/lib/session";
 import { resolveYear } from "@/lib/academic";
 import { listPayments } from "@/lib/payments";
 import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
@@ -16,7 +16,7 @@ export default async function PaymentsPage({
 }: {
   searchParams: Promise<{ year?: string }>;
 }) {
-  const ctx = await requireStaff();
+  const ctx = await requireView("payments");
   const locale = (ctx.school.locale as Locale) ?? "en";
   const t = getTranslator(locale);
   const sp = await searchParams;

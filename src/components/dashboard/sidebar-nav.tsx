@@ -15,30 +15,36 @@ import {
   Settings,
 } from "lucide-react";
 import { getTranslator, type Locale } from "@/lib/i18n";
+import { canView, NAV_ITEMS, type Role, type Page } from "@/lib/permissions";
 
-const NAV = [
-  { href: "/dashboard", key: "nav_dashboard", icon: LayoutDashboard, section: null, admin: false },
-  { href: "/dashboard/students", key: "nav_students", icon: Users, section: "section_school", admin: false },
-  { href: "/dashboard/admissions", key: "nav_admissions", icon: UserPlus, section: null, admin: false },
-  { href: "/dashboard/enrollments", key: "nav_enrollments", icon: GraduationCap, section: null, admin: false },
-  { href: "/dashboard/fees", key: "nav_fees", icon: ReceiptText, section: "section_finance", admin: false },
-  { href: "/dashboard/payments", key: "nav_payments", icon: Wallet, section: null, admin: false },
-  { href: "/dashboard/reports", key: "nav_reports", icon: BarChart3, section: null, admin: false },
-  { href: "/dashboard/export", key: "nav_export", icon: DatabaseBackup, section: null, admin: true },
-  { href: "/dashboard/settings", key: "nav_settings", icon: Settings, section: null, admin: false },
-] as const;
+// Icons live here, not in the shared (client-safe but otherwise plain) NAV_ITEMS
+// list — icon components are functions, and functions can't cross the server
+// -> client boundary if that list were ever built server-side.
+const ICONS: Record<Page, typeof LayoutDashboard> = {
+  dashboard: LayoutDashboard,
+  students: Users,
+  admissions: UserPlus,
+  enrollments: GraduationCap,
+  fees: ReceiptText,
+  payments: Wallet,
+  reports: BarChart3,
+  export: DatabaseBackup,
+  settings: Settings,
+};
 
-export function SidebarNav({ locale, canExport }: { locale: Locale; canExport: boolean }) {
+export function SidebarNav({ locale, role }: { locale: Locale; role: Role }) {
   const pathname = usePathname();
   const t = getTranslator(locale);
+  const items = NAV_ITEMS.filter((item) => canView(role, item.page));
 
   return (
     <nav className="flex-1 space-y-1 p-3">
-      {NAV.filter((item) => !item.admin || canExport).map((item) => {
+      {items.map((item) => {
         const active =
           item.href === "/dashboard"
             ? pathname === item.href
             : pathname.startsWith(item.href);
+        const Icon = ICONS[item.page];
         return (
           <div key={item.href}>
             {item.section && (
@@ -59,7 +65,7 @@ export function SidebarNav({ locale, canExport }: { locale: Locale; canExport: b
                   transition={{ type: "spring", stiffness: 400, damping: 32 }}
                 />
               )}
-              <item.icon
+              <Icon
                 className={`relative z-10 h-4 w-4 ${
                   active ? "text-accent-foreground" : "text-muted-foreground"
                 }`}

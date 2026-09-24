@@ -1,15 +1,16 @@
 import { and, eq } from "drizzle-orm";
-import { requireStaff } from "@/lib/session";
+import { requireStaff, canView } from "@/lib/session";
 import { db } from "@/db";
 import { academicYears } from "@/db/schema";
 import { buildExportWorkbook } from "@/lib/export";
 
 export const dynamic = "force-dynamic";
 
-// Full data export as a multi-sheet .xlsx. Owner / Admin / Accountant only.
+// Full data export as a multi-sheet .xlsx. Owner / Admin only — same rule as
+// the /dashboard/export page.
 export async function GET(req: Request) {
   const ctx = await requireStaff();
-  if (!["OWNER", "ADMIN", "ACCOUNTANT"].includes(ctx.role)) {
+  if (!canView(ctx.role, "export")) {
     return new Response("Not allowed.", { status: 403 });
   }
 

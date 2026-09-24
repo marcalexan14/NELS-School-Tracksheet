@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireStaff, can } from "@/lib/session";
+import { requireView, can } from "@/lib/session";
 import { resolveYear } from "@/lib/academic";
 import { getStudentLedger } from "@/lib/fees";
 import { listStudents, fullName } from "@/lib/students";
@@ -23,7 +23,7 @@ export default async function NewPaymentPage({
 }: {
   searchParams: Promise<{ year?: string; student?: string }>;
 }) {
-  const ctx = await requireStaff();
+  const ctx = await requireView("payments");
   if (!can(ctx.role, "payments")) redirect("/dashboard/payments");
 
   const locale = (ctx.school.locale as Locale) ?? "en";

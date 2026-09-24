@@ -3,8 +3,10 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { schools, staff } from "@/db/schema";
 import { auth } from "@/auth";
+import { canView, can, homeFor, type Page, type Role, type WriteArea } from "@/lib/permissions";
 
-export type Role = "OWNER" | "ADMIN" | "REGISTRAR" | "ACCOUNTANT" | "TEACHER" | "VIEWER";
+export type { Role, Page, WriteArea };
+export { can, canView, homeFor };
 
 // Single-tenant: there is exactly one school row once setup is done.
 export async function getSchool() {
@@ -43,19 +45,16 @@ export async function requireStaff(): Promise<StaffContext> {
   };
 }
 
-const WRITE_ROLES: Record<string, Role[]> = {
-  students: ["OWNER", "ADMIN", "REGISTRAR"],
-  enrollments: ["OWNER", "ADMIN", "REGISTRAR"],
-  fees: ["OWNER", "ADMIN", "ACCOUNTANT"],
-  payments: ["OWNER", "ADMIN", "ACCOUNTANT"],
-  settings: ["OWNER", "ADMIN"],
-};
-
-export function can(role: Role, area: keyof typeof WRITE_ROLES): boolean {
-  return WRITE_ROLES[area].includes(role);
+// Gate for an entire page: a role that can't see it is sent to wherever it
+// does belong, quietly, rather than shown a "not allowed" wall — someone
+// pasting a link from a colleague just lands on their own home screen.
+export async function requireView(page: Page): Promise<StaffContext> {
+  const ctx = await requireStaff();
+  if (!canView(ctx.role, page)) redirect(homeFor(ctx.role));
+  return ctx;
 }
 
-export async function requireCan(area: keyof typeof WRITE_ROLES): Promise<StaffContext> {
+export async function requireCan(area: WriteArea): Promise<StaffContext> {
   const ctx = await requireStaff();
   if (!can(ctx.role, area)) {
     throw new Error(`Your role (${ctx.role}) can't modify ${area}.`);

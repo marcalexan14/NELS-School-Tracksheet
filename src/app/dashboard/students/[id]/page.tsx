@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Wallet } from "lucide-react";
-import { requireStaff, can } from "@/lib/session";
+import { requireView, can } from "@/lib/session";
 import { resolveYear } from "@/lib/academic";
 import { getStudent, fullName } from "@/lib/students";
 import { getStudentLedger } from "@/lib/fees";
@@ -68,7 +68,7 @@ export default async function StudentProfilePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ year?: string }>;
 }) {
-  const ctx = await requireStaff();
+  const ctx = await requireView("students");
   const locale = (ctx.school.locale as Locale) ?? "en";
   const t = getTranslator(locale);
   const { id } = await params;

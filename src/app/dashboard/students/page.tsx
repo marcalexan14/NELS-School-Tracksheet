@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { UserPlus, FileSpreadsheet } from "lucide-react";
-import { requireStaff, can } from "@/lib/session";
+import { requireView, can } from "@/lib/session";
 import { resolveYear } from "@/lib/academic";
 import { listStudents } from "@/lib/students";
 import { getTranslator, enumLabel, type Locale } from "@/lib/i18n";
@@ -27,7 +27,7 @@ export default async function StudentsPage({
 }: {
   searchParams: Promise<{ year?: string; q?: string; grade?: string; status?: string }>;
 }) {
-  const ctx = await requireStaff();
+  const ctx = await requireView("students");
   const locale = (ctx.school.locale as Locale) ?? "en";
   const t = getTranslator(locale);
   const sp = await searchParams;

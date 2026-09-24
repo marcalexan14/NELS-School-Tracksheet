@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
 import { Download, Database } from "lucide-react";
-import { requireStaff } from "@/lib/session";
+import { requireView } from "@/lib/session";
 import { listYears } from "@/lib/academic";
 import { getTranslator, type Locale } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,9 +28,7 @@ const SHEETS = [
 ];
 
 export default async function ExportPage() {
-  const ctx = await requireStaff();
-  if (!["OWNER", "ADMIN", "ACCOUNTANT"].includes(ctx.role)) redirect("/dashboard");
-
+  const ctx = await requireView("export");
   const locale = (ctx.school.locale as Locale) ?? "en";
   const t = getTranslator(locale);
   const years = await listYears(ctx.schoolId);
